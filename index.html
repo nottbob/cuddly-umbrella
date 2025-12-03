@@ -18,64 +18,65 @@
       --alert-yellow: #facc15;
     }
 
-    /* ---------------------------------------------------
-       Fullscreen layout scaling
-    --------------------------------------------------- */
+    /* =======================================================
+       FULLSCREEN BODY (NO FLEX CENTER)
+    =======================================================*/
     body {
       margin: 0;
       height: 100vh;
       width: 100vw;
+      overflow: hidden;  
       background: radial-gradient(circle at top, #1e293b 0, #020617 55%);
       color: var(--text);
       font-family: var(--mono);
-      display: flex;
-      align-items: stretch;
-      justify-content: stretch;
-      padding: 0;
     }
 
-    /* ---------------------------------------------------
-       The board takes 100% of the window, scales smoothly
-    --------------------------------------------------- */
+    /* =======================================================
+       FULLSCREEN BOARD (ABSOLUTE FILL)
+    =======================================================*/
     .board {
+      position: absolute;
+      inset: 0;     /* top:0, left:0, right:0, bottom:0 */
+      padding: 4vh 4vw;
+
       background: rgba(2,6,23,0.95);
-      border-radius: 1rem;
       border: 1px solid var(--border);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.65);
-      padding: 2rem 3rem;
-
-      width: 100%;
-      height: 100%;
-
-      max-width: none;
-      max-height: none;
 
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: flex-start;
     }
 
+    /* =======================================================
+       TITLE (SCALES WITH VIEWPORT)
+    =======================================================*/
     .title {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 2vh;
-      font-size: clamp(1.2rem, 3.5vw, 4rem);
+      margin-bottom: 3vh;
+      font-size: clamp(1.2rem, 4vh, 4rem);
     }
 
-    /* ---------------------------------------------------
-       Grid scales with screen size
-    --------------------------------------------------- */
+    /* =======================================================
+       GRID (BIG SCALING + FULL WIDTH)
+    =======================================================*/
     .grid {
       display: grid;
-      grid-template-columns: 140px 1fr 1fr 1fr;
-      row-gap: 0.7vh;
-      column-gap: 0.7vw;
+      grid-template-columns: 160px 1fr 1fr 1fr;
+      row-gap: 1.3vh;
+      column-gap: 1.2vw;
 
-      font-size: clamp(1rem, 2.8vw, 3.2rem);
+      font-size: clamp(1.2rem, 4vh, 4rem);
+      width: 100%;
     }
 
-    .cell { white-space: nowrap; }
+    .cell {
+      white-space: nowrap;
+    }
 
+    /* =======================================================
+       ALERT COLORS
+    =======================================================*/
     .alert-red {
       background: var(--alert-red);
       color: black !important;
@@ -94,10 +95,13 @@
       width: 100%;
     }
 
+    /* =======================================================
+       DEBUG INPUTS AUTO-SCALE
+    =======================================================*/
     input.debug-input {
-      width: 140px;
+      width: 20vw;
       padding: 0.25rem;
-      font-size: clamp(1rem, 2.8vw, 3.2rem);
+      font-size: clamp(1.2rem, 4vh, 4rem);
       font-family: var(--mono);
     }
   </style>
@@ -150,7 +154,7 @@
 /* ------- SETTINGS ------- */
 /* ------------------------ */
 
-const DEBUG_MODE = false;
+const DEBUG_MODE = false;   // toggle manually
 
 const WORKER_URL = "https://noisy-sun-8ce3.jhonbluebrown.workers.dev/weather";
 const NOAA_TIDE_STATION = "8779750";
