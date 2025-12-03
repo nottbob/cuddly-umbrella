@@ -7,172 +7,159 @@
 
 <style>
 :root {
-  --bg: #020617;
-  --text: #e5e7eb;
-  --border: #1f2937;
-  --mono: "SF Mono", Menlo, Consolas, monospace;
-  --alert-red: #7f1d1d;
-  --alert-yellow: #facc15;
+  --bg:#020617;
+  --text:#e5e7eb;
+  --border:#1f2937;
+  --mono:"SF Mono",Menlo,Consolas,monospace;
+  --alert-red:#7f1d1d;
+  --alert-yellow:#facc15;
 }
 
+/* FULLSCREEN CLEAN CANVAS */
 body {
-  margin: 0;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-  background: radial-gradient(circle at top, #1e293b 0, #020617 55%);
-  color: var(--text);
-  font-family: var(--mono);
+  margin:0;
+  width:100vw;
+  height:100vh;
+  overflow:hidden;
+  background:radial-gradient(circle at top,#1e293b 0,#020617 55%);
+  color:var(--text);
+  font-family:var(--mono);
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  /* the board centers naturally */
+  display:flex;
+  justify-content:center;
+  align-items:center;
 }
 
+/* MAIN BOARD (responsive, never distorts) */
 .board {
-  width: 100vw;
-  height: 100vh;
-  padding: 5vh 5vw;
-  box-sizing: border-box;
+  width:100%;
+  height:100%;
+  padding:4vh 4vw;
+  box-sizing:border-box;
 
-  display: grid;
-  grid-template-rows: auto 1fr;
-  grid-template-columns: 1fr auto;
+  display:flex;
+  flex-direction:column;
+  gap:5vh;
 }
 
-/* -------------------------------
-   TOP BAR: WEATHER + UPDATED
--------------------------------- */
-.top-left {
-  font-size: clamp(2rem, 7vh, 7rem);
-  font-weight: 600;
+/* TOP BAR: WEATHER (left) + UPDATED (right) */
+.title {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+
+  /* responsive scaling */
+  font-size:clamp(1.8rem,4vw,4rem);
 }
 
-.top-right {
-  justify-self: end;
-  font-size: clamp(1.5rem, 6vh, 6rem);
-}
-
-/* -------------------------------
-   MAIN GRID (4 columns)
--------------------------------- */
+/* 4-COLUMN RESPONSIVE GRID */
 .grid {
-  grid-column: 1 / span 2;
-  margin-top: 5vh;
+  flex:1;
+  width:100%;
 
-  display: grid;
+  display:grid;
+
+  /* 4 equal columns */
   grid-template-columns: 1fr 1fr 1fr 1fr;
 
-  font-size: clamp(1.2rem, 5vh, 5rem);
-  row-gap: 3vh;
-  column-gap: 3vw;
+  /* Perfect spacing without drifting */
+  row-gap:3vh;
+  column-gap:3vw;
 
-  align-items: center;
+  /* text scaling */
+  font-size:clamp(1.2rem,2.5vw,3rem);
 }
 
 .cell {
-  white-space: nowrap;
+  white-space:nowrap;
 }
 
-/* Alerts */
+/* ALERT COLORS */
 .alert-red {
-  background: var(--alert-red);
-  color: black !important;
-  padding: .3rem .4rem;
-  border-radius: 6px;
-  width: 100%;
-  display: inline-block;
+  background:var(--alert-red);
+  color:black !important;
+  padding:0.2em 0.4em;
+  border-radius:4px;
+  width:100%;
+  display:inline-block;
 }
 
 .alert-yellow {
-  background: var(--alert-yellow);
-  color: black !important;
-  padding: .3rem .4rem;
-  border-radius: 6px;
-  width: 100%;
-  display: inline-block;
+  background:var(--alert-yellow);
+  color:black !important;
+  padding:0.2em 0.4em;
+  border-radius:4px;
+  width:100%;
+  display:inline-block;
 }
 
-/* Debug */
+/* DEBUG INPUTS */
 input.debug-input {
-  font-family: var(--mono);
-  font-size: clamp(1.5rem, 5vh, 5rem);
-  width: 16vw;
-  padding: .3rem .4rem;
+  width:100%;
+  font-size:inherit;
+  padding:0.2em 0.4em;
 }
 </style>
 </head>
 
 <body>
-<div class="board">
+  <div class="board">
+    <!-- TOP BAR -->
+    <div class="title">
+      <div class="title-main">WEATHER</div>
+      <div class="title-sub" id="updatedAt">LOADING…</div>
+    </div>
 
-  <!-- TOP BAR -->
-  <div class="top-left">WEATHER</div>
-  <div class="top-right" id="updatedAt">LOADING…</div>
+    <!-- FIXED 4-COLUMN GRID (IDENTICAL TO YOUR ORIGINAL LAYOUT) -->
+    <div class="grid">
 
-  <!-- MAIN GRID -->
-  <div class="grid">
+      <div class="cell"></div>
+      <div class="cell">GULF</div>
+      <div class="cell">BAY</div>
+      <div class="cell">TIDES: <span id="tideDate"></span></div>
 
-    <!-- Row 1 -->
-    <div class="cell"></div>
-    <div class="cell">GULF</div>
-    <div class="cell">BAY</div>
-    <div class="cell">TIDES: <span id="tideDate"></span></div>
+      <div class="cell"><span id="waterLabel">WATER</span></div>
+      <div class="cell"><span id="gulfWater">--</span></div>
+      <div class="cell"><span id="bayWater">--</span></div>
+      <div class="cell">LOW: <span id="tideLow">--</span></div>
 
-    <!-- Row 2 -->
-    <div class="cell"><span id="waterLabel">WATER</span></div>
-    <div class="cell"><span id="gulfWater">--</span></div>
-    <div class="cell"><span id="bayWater">--</span></div>
-    <div class="cell">LOW: <span id="tideLow">--</span></div>
+      <div class="cell"><span id="airLabel">AIR</span></div>
+      <div class="cell"><span id="gulfAir">--</span></div>
+      <div class="cell"><span id="bayAir">--</span></div>
+      <div class="cell">HIGH: <span id="tideHigh">--</span></div>
 
-    <!-- Row 3 -->
-    <div class="cell"><span id="airLabel">AIR</span></div>
-    <div class="cell"><span id="gulfAir">--</span></div>
-    <div class="cell"><span id="bayAir">--</span></div>
-    <div class="cell">HIGH: <span id="tideHigh">--</span></div>
+      <div class="cell"><span id="windLabel">WINDS</span></div>
+      <div class="cell"><span id="gulfWind">--</span></div>
+      <div class="cell"><span id="bayWind">--</span></div>
+      <div class="cell">SUNRISE: <span id="sunrise">--</span></div>
 
-    <!-- Row 4 -->
-    <div class="cell"><span id="windLabel">WINDS</span></div>
-    <div class="cell"><span id="gulfWind">--</span></div>
-    <div class="cell"><span id="bayWind">--</span></div>
-    <div class="cell">SUNRISE: <span id="sunrise">--</span></div>
-
-    <!-- Row 5 -->
-    <div class="cell"><span id="seasLabel">SEAS</span></div>
-    <div class="cell"><span id="gulfSeas">--</span></div>
-    <div class="cell"><span id="baySeas">N/A</span></div>
-    <div class="cell">SUNSET: <span id="sunset">--</span></div>
-
+      <div class="cell"><span id="seasLabel">SEAS</span></div>
+      <div class="cell"><span id="gulfSeas">--</span></div>
+      <div class="cell"><span id="baySeas" class="muted">N/A</span></div>
+      <div class="cell">SUNSET: <span id="sunset">--</span></div>
+    </div>
   </div>
-</div>
+
 
 <script>
-/* ------------------------------
-   Your original JS untouched
------------------------------- */
-
-const DEBUG_MODE = false;
-const WORKER_URL = "https://noisy-sun-8ce3.jhonbluebrown.workers.dev/weather";
-const NOAA_TIDE_STATION = "8779750";
+/* YOUR ORIGINAL JS — UNTOUCHED */
+const DEBUG_MODE=false;
+const WORKER_URL="https://noisy-sun-8ce3.jhonbluebrown.workers.dev/weather";
+const NOAA_TIDE_STATION="8779750";
 const LAT=26.07139,LON=-97.12872;
 
 function pad(n){return String(n).padStart(2,"0");}
 function toMil(d){return pad(d.getHours())+":"+pad(d.getMinutes());}
 function toMilSec(d){return pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds());}
 
-function clearAlerts(){
-  document.querySelectorAll('.alert-red,.alert-yellow')
-    .forEach(el=>el.classList.remove("alert-red","alert-yellow"));
-}
-
-function mark(id,cls){
-  document.getElementById(id).classList.add(cls);
-}
+function clearAlerts(){document.querySelectorAll('.alert-red,.alert-yellow').forEach(el=>el.classList.remove("alert-red","alert-yellow"));}
+function mark(id,cls){document.getElementById(id).classList.add(cls);}
 
 function applyAlertLogic(w){
   clearAlerts();
-  const gw=w.gulf.waterF, bw=w.bay.waterF;
-  const ga=w.gulf.airF, ba=w.bay.airF;
+  const gw=w.gulf.waterF,bw=w.bay.waterF;
+  const ga=w.gulf.airF,ba=w.bay.airF;
   const seas=w.waves.waveFt;
 
   const waterLow=gw<60||bw<60;
@@ -203,16 +190,15 @@ function applyAlertLogic(w){
   if(seas>=8){
     mark("seasLabel","alert-red");
     mark("gulfSeas","alert-red");
-  }
-  else if(seas>=6){
+  } else if(seas>=6){
     mark("seasLabel","alert-yellow");
     mark("gulfSeas","alert-yellow");
   }
 }
 
 function extractWind(str){
-  const parts=str.match(/(\d+)[^\d]+(\d+)/);
-  return {windKts:parts?+parts[1]:0, gustKts:parts?+parts[2]:0};
+  const m=str.match(/(\d+)[^\d]+(\d+)/);
+  return {windKts:m?+m[1]:0,gustKts:m?+m[2]:0};
 }
 
 function applyDebugAlerts(){
@@ -221,7 +207,6 @@ function applyDebugAlerts(){
   const ga=parseFloat(gulfAir.value)||0;
   const ba=parseFloat(bayAir.value)||0;
   const seas=parseFloat(gulfSeas.value)||0;
-
   const gWind=extractWind(gulfWind.value);
   const bWind=extractWind(bayWind.value);
 
@@ -234,16 +219,15 @@ function applyDebugAlerts(){
 
 function enableDebugMode(){
   if(!DEBUG_MODE)return;
-  ["gulfWater","bayWater","gulfAir","bayAir","gulfWind","bayWind","gulfSeas"]
-    .forEach(id=>{
-      const old=document.getElementById(id);
-      const i=document.createElement("input");
-      i.className="debug-input";
-      i.id=id;
-      i.value=old.textContent;
-      i.addEventListener("input",applyDebugAlerts);
-      old.replaceWith(i);
-    });
+  ["gulfWater","bayWater","gulfAir","bayAir","gulfWind","bayWind","gulfSeas"].forEach(id=>{
+    const el=document.getElementById(id);
+    const i=document.createElement("input");
+    i.className="debug-input";
+    i.id=id;
+    i.value=el.textContent;
+    i.addEventListener("input",applyDebugAlerts);
+    el.replaceWith(i);
+  });
   applyDebugAlerts();
 }
 
@@ -274,7 +258,6 @@ function updateBoard(){
   .then(r=>r.json()).then(t=>{
     const low=t.predictions.find(x=>x.type==="L");
     const high=t.predictions.find(x=>x.type==="H");
-
     tideLow.textContent=low?`${toMil(new Date(low.t))} / ${(+low.v).toFixed(1)} ft`:"--";
     tideHigh.textContent=high?`${toMil(new Date(high.t))} / ${(+high.v).toFixed(1)} ft`:"--";
   });
@@ -293,9 +276,7 @@ function updateBoard(){
 
 updateBoard();
 setInterval(updateBoard,60000);
-setInterval(()=>{
-  updatedAt.textContent="UPDATED "+toMilSec(new Date())+" LCL";
-},1000);
+setInterval(()=>{updatedAt.textContent="UPDATED "+toMilSec(new Date())+" LCL";},1000);
 </script>
 
 </body>
