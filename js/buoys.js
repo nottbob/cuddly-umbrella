@@ -1,17 +1,18 @@
+// buoys.js
 import { oneDec, CtoF, mpsToKts, degToCardinal } from "./util.js";
 
 export async function fetchBuoy(id){
   const url = `https://www.ndbc.noaa.gov/data/realtime2/${id}.txt`;
   const resp = await fetch(url);
 
-  if(!resp.ok) throw new Error("Buoy fetch failed");
+  if (!resp.ok) throw new Error("Buoy fetch failed");
 
   const text = await resp.text();
   const lines = text
     .split(/\r?\n/)
     .filter(l => l.trim() && !l.startsWith("#"));
 
-  const rows = lines.map(line=>{
+  const rows = lines.map(line => {
     const c = line.trim().split(/\s+/);
     return {
       WDIR: parseFloat(c[5]),
@@ -23,18 +24,18 @@ export async function fetchBuoy(id){
   });
 
   const fallback = getter => {
-    for(const r of rows){
+    for (const r of rows) {
       const v = getter(r);
-      if(!isNaN(v)) return v;
+      if (!isNaN(v)) return v;
     }
     return null;
   };
 
-  const airC   = fallback(r=>r.ATMP);
-  const waterC = fallback(r=>r.WTMP);
-  const wspd   = fallback(r=>r.WSPD);
-  const gust   = fallback(r=>r.GST);
-  const wdir   = fallback(r=>r.WDIR);
+  const airC   = fallback(r => r.ATMP);
+  const waterC = fallback(r => r.WTMP);
+  const wspd   = fallback(r => r.WSPD);
+  const gust   = fallback(r => r.GST);
+  const wdir   = fallback(r => r.WDIR);
 
   return {
     airF:   airC   != null ? oneDec(CtoF(airC)) : null,
@@ -42,5 +43,28 @@ export async function fetchBuoy(id){
     windKts: wspd  != null ? oneDec(mpsToKts(wspd)) : null,
     gustKts: gust  != null ? oneDec(mpsToKts(gust)) : null,
     windDirCardinal: degToCardinal(wdir)
+  };
+}
+
+// IMPORTANT: THIS WAS MISSING
+export async function getBuoyData() {
+  const gulf = await fetchBuoy("BZST2");
+  const bay  = await fetchBuoy("PCGT2");
+
+  return {
+    gulf: {
+      water: gulf.waterF,
+      air: gulf.airF,
+      windKts: gulf.windKts,
+      gustKts: gulf.gustKts,
+      dir: gulf.windDirCardinal
+    },
+    bay: {
+      water: bay.waterF,
+      air: bay.airF,
+      windKts: bay.windKts,
+      gustKts: bay.gustKts,
+      dir: bay.windDirCardinal
+    }
   };
 }
