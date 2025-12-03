@@ -1,50 +1,78 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<title>SPI Marine Board</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+:root {
+  --bg:#020617;
+  --text:#e5e7eb;
+  --border:#1f2937;
+  --mono:"SF Mono",Menlo,Consolas,monospace;
+  --alert-red:#7f1d1d;
+  --alert-yellow:#facc15;
+}
 
-<!-- Your full CSS stays exactly the same -->
-<link rel="stylesheet" href="styles.css">
+/* FULLSCREEN CANVAS */
+body {
+  margin:0;
+  width:100vw;
+  height:100vh;
+  overflow:hidden;
+  background:radial-gradient(circle at top,#1e293b 0,#020617 55%);
+  color:var(--text);
+  font-family:var(--mono);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
 
-</head>
+/* MAIN BOARD */
+.board {
+  width:100%;
+  height:100%;
+  padding:4vh 4vw;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  gap:5vh;
+}
 
-<body>
-  <div class="board">
-    <div class="title">
-      <div>WEATHER</div>
-      <div id="updatedAt">LOADING…</div>
-    </div>
+/* TOP BAR */
+.title {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:clamp(2rem,4vw,4rem);
+}
 
-    <div class="grid">
-      <div></div>
-      <div>GULF</div>
-      <div>BAY</div>
-      <div>TIDES: <span id="tideDate"></span></div>
+/* MAIN GRID */
+.grid {
+  flex:1;
+  width:100%;
 
-      <div><span id="waterLabel">WATER</span></div>
-      <div><span id="gulfWater">--</span></div>
-      <div><span id="bayWater">--</span></div>
-      <div>LOW: <span id="tideLow">--</span></div>
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
 
-      <div><span id="airLabel">AIR</span></div>
-      <div><span id="gulfAir">--</span></div>
-      <div><span id="bayAir">--</span></div>
-      <div>HIGH: <span id="tideHigh">--</span></div>
+  row-gap:4vh;
+  column-gap:4vw;
 
-      <div><span id="windLabel">WIND</span></div>
-      <div><span id="gulfWind">--</span></div>
-      <div><span id="bayWind">--</span></div>
-      <div>SUNRISE: <span id="sunrise">--</span></div>
+  font-size:clamp(1.4rem,2.8vw,3.2rem);
+}
 
-      <div><span id="seasLabel">SEAS</span></div>
-      <div><span id="gulfSeas">--</span></div>
-      <div><span id="baySeas">N/A</span></div>
-      <div>SUNSET: <span id="sunset">--</span></div>
-    </div>
-  </div>
+.cell {
+  white-space:nowrap;
+}
 
-<script type="module" src="js/main.js"></script>
-</body>
-</html>
+/* ALERT COLORS */
+.alert-red {
+  background:var(--alert-red);
+  color:black !important;
+  padding:0.25em 0.4em;
+  border-radius:6px;
+  width:100%;
+  display:inline-block;
+}
+
+.alert-yellow {
+  background:var(--alert-yellow);
+  color:black !important;
+  padding:0.25em 0.4em;
+  border-radius:6px;
+  width:100%;
+  display:inline-block;
+}
