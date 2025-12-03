@@ -84,77 +84,58 @@ body {
   width:100%;
   display:inline-block;
 }
-
-/* DEBUG INPUTS */
-input.debug-input {
-  width:100%;
-  font-size:inherit;
-  padding:0.25em 0.4em;
-}
 </style>
 </head>
 
 <body>
   <div class="board">
-    <!-- TOP BAR -->
     <div class="title">
       <div>WEATHER</div>
       <div id="updatedAt">LOADING…</div>
     </div>
 
-    <!-- 4-COLUMN GRID -->
     <div class="grid">
-
-      <!-- HEADER ROW -->
       <div class="cell"></div>
       <div class="cell">GULF</div>
       <div class="cell">BAY</div>
       <div class="cell">TIDES: <span id="tideDate"></span></div>
 
-      <!-- WATER -->
       <div class="cell"><span id="waterLabel">WATER</span></div>
       <div class="cell"><span id="gulfWater">--</span></div>
       <div class="cell"><span id="bayWater">--</span></div>
       <div class="cell">LOW: <span id="tideLow">--</span></div>
 
-      <!-- AIR -->
       <div class="cell"><span id="airLabel">AIR</span></div>
       <div class="cell"><span id="gulfAir">--</span></div>
       <div class="cell"><span id="bayAir">--</span></div>
       <div class="cell">HIGH: <span id="tideHigh">--</span></div>
 
-      <!-- WINDS -->
       <div class="cell"><span id="windLabel">WIND</span></div>
       <div class="cell"><span id="gulfWind">--</span></div>
       <div class="cell"><span id="bayWind">--</span></div>
       <div class="cell">SUNRISE: <span id="sunrise">--</span></div>
 
-      <!-- SEAS -->
       <div class="cell"><span id="seasLabel">SEAS</span></div>
       <div class="cell"><span id="gulfSeas">--</span></div>
       <div class="cell"><span id="baySeas">N/A</span></div>
       <div class="cell">SUNSET: <span id="sunset">--</span></div>
-
     </div>
   </div>
 
 <script>
 /* -------------------------------------------- */
-/*  GLOBALS                                     */
+/* GLOBALS                                      */
 /* -------------------------------------------- */
 
-const DEBUG_MODE=false;
 const WORKER_URL="https://noisy-sun-8ce3.jhonbluebrown.workers.dev/weather";
 const NOAA_TIDE_STATION="8779750";
 const LAT=26.07139, LON=-97.12872;
 
 let offlineMode = false;
-let lastUpdateTime = null;
+let offlineTime = null;
+let lastLiveUpdate = null;
 
-/* -------------------------------------------- */
-/*  UTILITIES                                   */
-/* -------------------------------------------- */
-
+/* UTIL */
 function pad(n){return String(n).padStart(2,"0");}
 function toMil(d){return pad(d.getHours())+":"+pad(d.getMinutes());}
 function toMilSec(d){return pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds());}
@@ -216,10 +197,7 @@ function applyAlertLogic(w){
   }
 }
 
-/* -------------------------------------------- */
-/*      RENDER FUNCTIONS                        */
-/* -------------------------------------------- */
-
+/* RENDER LIVE DATA */
 function renderLiveWeather(w){
   gulfWater.textContent=w.gulf.waterF+"°F";
   bayWater.textContent=w.bay.waterF+"°F";
@@ -229,23 +207,23 @@ function renderLiveWeather(w){
   gulfWind.textContent=`${w.gulf.windKts}-${w.gulf.gustKts} kts ${w.gulf.windDirCardinal}`;
   bayWind.textContent=`${w.bay.windKts}-${w.bay.gustKts} kts ${w.bay.windDirCardinal}`;
 
-  gulfSeas.textContent = w.waves.waveFt!=null ? w.waves.waveFt+" ft" : "--";
+  gulfSeas.textContent=
+    w.waves.waveFt!=null ? w.waves.waveFt+" ft" : "--";
 
   applyAlertLogic(w);
 
   updatedAt.style.color="#e5e7eb";
-  updatedAt.textContent = "UPDATED " + toMilSec(lastUpdateTime) + " LCL";
+  updatedAt.textContent = "UPDATED " + toMilSec(lastLiveUpdate) + " LCL";
 }
 
+/* RENDER OFFLINE DATA */
 function applyOfflineDisplay(){
   const cached = localStorage.getItem("lastWeather");
-
   if(!cached){
-    updatedAt.textContent="OFFLINE MODE — NO SAVED DATA";
-    updatedAt.style.color="#ff4444";
+    updatedAt.textContent="OFFLINE — NO SAVED DATA";
+    updatedAt.style.color="#facc15";
     return;
   }
-
   const w = JSON.parse(cached);
 
   gulfWater.textContent=w.gulf.waterF+"°F";
@@ -256,46 +234,51 @@ function applyOfflineDisplay(){
   gulfWind.textContent=`${w.gulf.windKts}-${w.gulf.gustKts} kts ${w.gulf.windDirCardinal}`;
   bayWind.textContent=`${w.bay.windKts}-${w.bay.gustKts} kts ${w.bay.windDirCardinal}`;
 
-  gulfSeas.textContent=(w.waves.waveFt!=null? w.waves.waveFt+" ft" : "--");
+  gulfSeas.textContent=
+    w.waves.waveFt!=null ? w.waves.waveFt+" ft" : "--";
 
   applyAlertLogic(w);
 
   updatedAt.style.color="#facc15";
   updatedAt.textContent =
-    "OFFLINE MODE — USING LAST GOOD DATA (" + 
-    (lastUpdateTime ? toMilSec(lastUpdateTime) : "--:--:--") +
-    " LCL)";
+    "OFFLINE — " + toMilSec(offlineTime) + " LCL";
 }
 
-/* -------------------------------------------- */
-/*     MAIN WEATHER UPDATE FUNCTION             */
-/* -------------------------------------------- */
-
+/* MAIN UPDATE FUNCTION */
 function updateBoard(){
 
   fetch(WORKER_URL)
     .then(async r=>{
-      if(!r.ok) throw new Error("NETWORK FAIL");
+      if(!r.ok) throw new Error("network");
       const data = await r.json();
 
-      if(!data.gulf || !data.bay || !data.waves){
-        throw new Error("BAD DATA FORMAT");
-      }
-
       offlineMode = false;
-      lastUpdateTime = new Date();
 
+      lastLiveUpdate = new Date();
       localStorage.setItem("lastWeather", JSON.stringify(data));
-
       renderLiveWeather(data);
+
+      offlineTime = null;
     })
-    .catch(err=>{
-      console.warn("OFFLINE MODE ACTIVATED:", err);
-      offlineMode = true;
+    .catch(()=>{
+      if(!offlineMode){
+        offlineMode = true;
+        offlineTime = new Date();
+      }
       applyOfflineDisplay();
     });
 
-  /* TIDES + SUN TIMES — these may fail; that's fine */
+  /* FREEZE tides/sunrise in offline mode */
+  if(!offlineMode){
+    fetchTides();
+    fetchSun();
+  }
+
+  updateDate();
+}
+
+/* TIDES */
+function fetchTides(){
   fetch(`https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&station=${NOAA_TIDE_STATION}&date=today&interval=hilo&units=english&time_zone=lst_ldt&datum=MLLW&format=json`)
     .then(r=>r.json())
     .then(t=>{
@@ -307,51 +290,38 @@ function updateBoard(){
 
       tideHigh.textContent = high ?
         `${toMil(new Date(high.t))} / ${(+high.v).toFixed(1)} ft` : "--";
-    }).catch(()=>{});
+    });
+}
 
+/* SUN TIMES */
+function fetchSun(){
   fetch(`https://api.sunrise-sunset.org/json?lat=${LAT}&lng=${LON}&formatted=0`)
     .then(r=>r.json())
     .then(s=>{
       sunrise.textContent = toMil(new Date(s.results.sunrise));
       sunset.textContent  = toMil(new Date(s.results.sunset));
-    }).catch(()=>{});
+    });
+}
 
-  /* DATE */
-  const now=new Date();
+/* DATE */
+function updateDate(){
+  const now = new Date();
   const dd=pad(now.getDate());
   const mm=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"][now.getMonth()];
   const yy=String(now.getFullYear()).slice(2);
   tideDate.textContent=`${dd} ${mm} ${yy}`;
 }
 
-/* -------------------------------------------- */
-/*     CLOCK UPDATE — ONLY WHEN ONLINE          */
-/* -------------------------------------------- */
+/* SETUP */
+updateBoard();
+setInterval(updateBoard, 30000); // 30 sec refresh
 
+/* LIVE CLOCK ONLY ONLINE */
 setInterval(()=>{
-  if(!offlineMode && lastUpdateTime){
-    updatedAt.textContent="UPDATED "+toMilSec(lastUpdateTime)+" LCL";
+  if(!offlineMode && lastLiveUpdate){
+    updatedAt.textContent = "UPDATED " + toMilSec(lastLiveUpdate) + " LCL";
   }
 },1000);
-
-/* -------------------------------------------- */
-/* SAFE HARD RELOAD — ONLY IF ONLINE            */
-/* -------------------------------------------- */
-
-setInterval(()=>{
-  if(!offlineMode){
-    location.reload();
-  } else {
-    console.warn("SKIPPED AUTO RELOAD — OFFLINE MODE");
-  }
-},5*60*1000); // 5 min
-
-/* -------------------------------------------- */
-/* START                                         */
-/* -------------------------------------------- */
-
-updateBoard();
-setInterval(updateBoard,60000);
 
 </script>
 
