@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>SPI Marine Board</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <style>
     :root {
       --bg: #020617;
@@ -12,46 +13,65 @@
       --dim: #9ca3af;
       --accent: #38bdf8;
       --border: #1f2937;
-      --error: #f97373;
       --mono: "SF Mono", Menlo, Monaco, Consolas, monospace;
       --alert-red: #7f1d1d;
       --alert-yellow: #facc15;
     }
 
+    /* ---------------------------------------------------
+       Fullscreen layout scaling
+    --------------------------------------------------- */
     body {
       margin: 0;
-      min-height: 100vh;
+      height: 100vh;
+      width: 100vw;
       background: radial-gradient(circle at top, #1e293b 0, #020617 55%);
       color: var(--text);
       font-family: var(--mono);
       display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem;
+      align-items: stretch;
+      justify-content: stretch;
+      padding: 0;
     }
 
+    /* ---------------------------------------------------
+       The board takes 100% of the window, scales smoothly
+    --------------------------------------------------- */
     .board {
       background: rgba(2,6,23,0.95);
       border-radius: 1rem;
       border: 1px solid var(--border);
       box-shadow: 0 20px 40px rgba(0,0,0,0.65);
-      padding: 1.5rem 2rem;
+      padding: 2rem 3rem;
+
       width: 100%;
-      max-width: 900px;
+      height: 100%;
+
+      max-width: none;
+      max-height: none;
+
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
     .title {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 1rem;
+      margin-bottom: 2vh;
+      font-size: clamp(1.2rem, 3.5vw, 4rem);
     }
 
+    /* ---------------------------------------------------
+       Grid scales with screen size
+    --------------------------------------------------- */
     .grid {
       display: grid;
-      grid-template-columns: 120px 1fr 1fr 1fr;
-      row-gap: 0.35rem;
-      column-gap: 0.35rem;
-      font-size: clamp(0.75rem, 2vw, 1.1rem);
+      grid-template-columns: 140px 1fr 1fr 1fr;
+      row-gap: 0.7vh;
+      column-gap: 0.7vw;
+
+      font-size: clamp(1rem, 2.8vw, 3.2rem);
     }
 
     .cell { white-space: nowrap; }
@@ -59,7 +79,7 @@
     .alert-red {
       background: var(--alert-red);
       color: black !important;
-      padding: 0.2rem 0.3rem;
+      padding: 0.25rem 0.35rem;
       border-radius: 4px;
       display: inline-block;
       width: 100%;
@@ -68,16 +88,16 @@
     .alert-yellow {
       background: var(--alert-yellow);
       color: black !important;
-      padding: 0.2rem 0.3rem;
+      padding: 0.25rem 0.35rem;
       border-radius: 4px;
       display: inline-block;
       width: 100%;
     }
 
     input.debug-input {
-      width: 90px;
-      padding: 2px;
-      font-size: 0.9rem;
+      width: 140px;
+      padding: 0.25rem;
+      font-size: clamp(1rem, 2.8vw, 3.2rem);
       font-family: var(--mono);
     }
   </style>
@@ -130,7 +150,7 @@
 /* ------- SETTINGS ------- */
 /* ------------------------ */
 
-const DEBUG_MODE = false;   // <---- manually toggle here
+const DEBUG_MODE = false;
 
 const WORKER_URL = "https://noisy-sun-8ce3.jhonbluebrown.workers.dev/weather";
 const NOAA_TIDE_STATION = "8779750";
@@ -170,14 +190,12 @@ function applyAlertLogic(w){
   const waterLow = gw < 60 || bw < 60;
   const airLow = ga < 60 || ba < 60;
 
-  // WATER
   if(waterLow){
     mark("waterLabel","alert-red");
     mark("gulfWater","alert-red");
     mark("bayWater","alert-red");
   }
 
-  // AIR
   if(airLow && !waterLow){
     mark("airLabel","alert-yellow");
     mark("gulfAir","alert-yellow");
@@ -189,7 +207,6 @@ function applyAlertLogic(w){
     mark("bayAir","alert-red");
   }
 
-  // WINDS
   if(w.gulf.gustKts >= 25 || w.bay.gustKts >= 25 ||
      w.gulf.windKts >= 25 || w.bay.windKts >= 25){
     mark("windLabel","alert-red");
@@ -197,7 +214,6 @@ function applyAlertLogic(w){
     mark("bayWind","alert-red");
   }
 
-  // SEAS
   if(seas >= 8){
     mark("seasLabel","alert-red");
     mark("gulfSeas","alert-red");
@@ -232,21 +248,9 @@ function applyDebugAlerts() {
   const bWind = extractWind(document.getElementById("bayWind").value);
 
   const simulated = {
-    gulf: {
-      waterF: gw,
-      airF: ga,
-      windKts: gWind.windKts,
-      gustKts: gWind.gustKts
-    },
-    bay: {
-      waterF: bw,
-      airF: ba,
-      windKts: bWind.windKts,
-      gustKts: bWind.gustKts
-    },
-    waves: {
-      waveFt: seas
-    }
+    gulf: { waterF: gw, airF: ga, windKts: gWind.windKts, gustKts: gWind.gustKts },
+    bay:  { waterF: bw, airF: ba, windKts: bWind.windKts, gustKts: bWind.gustKts },
+    waves: { waveFt: seas }
   };
 
   applyAlertLogic(simulated);
