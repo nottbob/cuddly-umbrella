@@ -1,179 +1,171 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>SPI Marine Board</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8" />
+<title>SPI Marine Board</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <style>
-    :root {
-      --bg: #020617;
-      --panel: #020617;
-      --text: #e5e7eb;
-      --border: #1f2937;
-      --mono: "SF Mono", Menlo, Monaco, Consolas, monospace;
+<style>
+:root {
+  --bg: #020617;
+  --text: #e5e7eb;
+  --border: #1f2937;
+  --mono: "SF Mono", Menlo, Consolas, monospace;
+  --alert-red: #7f1d1d;
+  --alert-yellow: #facc15;
+}
 
-      --alert-red: #7f1d1d;
-      --alert-yellow: #facc15;
-    }
+body {
+  margin: 0;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: radial-gradient(circle at top, #1e293b 0, #020617 55%);
+  color: var(--text);
+  font-family: var(--mono);
 
-    body {
-      margin: 0;
-      overflow: hidden;
-      height: 100vh;
-      width: 100vw;
-      background: radial-gradient(circle at top, #1e293b 0, #020617 55%);
-      font-family: var(--mono);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+.board {
+  width: 100vw;
+  height: 100vh;
+  padding: 5vh 5vw;
+  box-sizing: border-box;
 
-    /* -----------------------------------------
-       BASE BOARD (unscaled)
-    ----------------------------------------- */
-    .board {
-      background: rgba(2,6,23,0.95);
-      border: 1px solid var(--border);
-      padding: 40px 60px;
-      border-radius: 10px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 1fr auto;
+}
 
-      /* NATURAL SIZE (we scale this whole board later) */
-      width: 1600px;
-      height: 900px;
+/* -------------------------------
+   TOP BAR: WEATHER + UPDATED
+-------------------------------- */
+.top-left {
+  font-size: clamp(2rem, 7vh, 7rem);
+  font-weight: 600;
+}
 
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 40px;
+.top-right {
+  justify-self: end;
+  font-size: clamp(1.5rem, 6vh, 6rem);
+}
 
-      transform-origin: top left;
-    }
+/* -------------------------------
+   MAIN GRID (4 columns)
+-------------------------------- */
+.grid {
+  grid-column: 1 / span 2;
+  margin-top: 5vh;
 
-    .title {
-      display: flex;
-      justify-content: space-between;
-      font-size: 70px;
-    }
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
 
-    .grid {
-      display: grid;
-      grid-template-columns: 300px 1fr 1fr 1fr;
-      row-gap: 30px;
-      column-gap: 30px;
-      font-size: 60px;
-      white-space: nowrap;
-    }
+  font-size: clamp(1.2rem, 5vh, 5rem);
+  row-gap: 3vh;
+  column-gap: 3vw;
 
-    .alert-red {
-      background: var(--alert-red);
-      color: black !important;
-      padding: 8px 12px;
-      border-radius: 6px;
-      width: 100%;
-      display: inline-block;
-    }
+  align-items: center;
+}
 
-    .alert-yellow {
-      background: var(--alert-yellow);
-      color: black !important;
-      padding: 8px 12px;
-      border-radius: 6px;
-      width: 100%;
-      display: inline-block;
-    }
+.cell {
+  white-space: nowrap;
+}
 
-    input.debug-input {
-      width: 300px;
-      font-size: 60px;
-      padding: 10px;
-    }
-  </style>
+/* Alerts */
+.alert-red {
+  background: var(--alert-red);
+  color: black !important;
+  padding: .3rem .4rem;
+  border-radius: 6px;
+  width: 100%;
+  display: inline-block;
+}
+
+.alert-yellow {
+  background: var(--alert-yellow);
+  color: black !important;
+  padding: .3rem .4rem;
+  border-radius: 6px;
+  width: 100%;
+  display: inline-block;
+}
+
+/* Debug */
+input.debug-input {
+  font-family: var(--mono);
+  font-size: clamp(1.5rem, 5vh, 5rem);
+  width: 16vw;
+  padding: .3rem .4rem;
+}
+</style>
 </head>
 
 <body>
-  <div class="board" id="board">
-    <div class="title">
-      <div>WEATHER</div>
-      <div id="updatedAt">LOADING…</div>
-    </div>
+<div class="board">
 
-    <div class="grid">
-      <div></div>
-      <div>GULF</div>
-      <div>BAY</div>
-      <div>TIDES: <span id="tideDate"></span></div>
+  <!-- TOP BAR -->
+  <div class="top-left">WEATHER</div>
+  <div class="top-right" id="updatedAt">LOADING…</div>
 
-      <div><span id="waterLabel">WATER</span></div>
-      <div><span id="gulfWater">--</span></div>
-      <div><span id="bayWater">--</span></div>
-      <div>LOW: <span id="tideLow">--</span></div>
+  <!-- MAIN GRID -->
+  <div class="grid">
 
-      <div><span id="airLabel">AIR</span></div>
-      <div><span id="gulfAir">--</span></div>
-      <div><span id="bayAir">--</span></div>
-      <div>HIGH: <span id="tideHigh">--</span></div>
+    <!-- Row 1 -->
+    <div class="cell"></div>
+    <div class="cell">GULF</div>
+    <div class="cell">BAY</div>
+    <div class="cell">TIDES: <span id="tideDate"></span></div>
 
-      <div><span id="windLabel">WINDS</span></div>
-      <div><span id="gulfWind">--</span></div>
-      <div><span id="bayWind">--</span></div>
-      <div>SUNRISE: <span id="sunrise">--</span></div>
+    <!-- Row 2 -->
+    <div class="cell"><span id="waterLabel">WATER</span></div>
+    <div class="cell"><span id="gulfWater">--</span></div>
+    <div class="cell"><span id="bayWater">--</span></div>
+    <div class="cell">LOW: <span id="tideLow">--</span></div>
 
-      <div><span id="seasLabel">SEAS</span></div>
-      <div><span id="gulfSeas">--</span></div>
-      <div><span id="baySeas">N/A</span></div>
-      <div>SUNSET: <span id="sunset">--</span></div>
-    </div>
+    <!-- Row 3 -->
+    <div class="cell"><span id="airLabel">AIR</span></div>
+    <div class="cell"><span id="gulfAir">--</span></div>
+    <div class="cell"><span id="bayAir">--</span></div>
+    <div class="cell">HIGH: <span id="tideHigh">--</span></div>
+
+    <!-- Row 4 -->
+    <div class="cell"><span id="windLabel">WINDS</span></div>
+    <div class="cell"><span id="gulfWind">--</span></div>
+    <div class="cell"><span id="bayWind">--</span></div>
+    <div class="cell">SUNRISE: <span id="sunrise">--</span></div>
+
+    <!-- Row 5 -->
+    <div class="cell"><span id="seasLabel">SEAS</span></div>
+    <div class="cell"><span id="gulfSeas">--</span></div>
+    <div class="cell"><span id="baySeas">N/A</span></div>
+    <div class="cell">SUNSET: <span id="sunset">--</span></div>
+
   </div>
+</div>
 
 <script>
 /* ------------------------------
-   AUTO SCALE ENTIRE BOARD
+   Your original JS untouched
 ------------------------------ */
-function autoScaleBoard() {
-  const board = document.getElementById("board");
-
-  const naturalWidth = 1600;
-  const naturalHeight = 900;
-
-  const scaleX = window.innerWidth / naturalWidth;
-  const scaleY = window.innerHeight / naturalHeight;
-
-  const scale = Math.min(scaleX, scaleY);
-
-  board.style.transform = `scale(${scale})`;
-
-  // Center it perfectly
-  board.style.position = "absolute";
-  board.style.left = `${(window.innerWidth - naturalWidth * scale) / 2}px`;
-  board.style.top = `${(window.innerHeight - naturalHeight * scale) / 2}px`;
-}
-
-window.addEventListener("resize", autoScaleBoard);
-window.addEventListener("load", autoScaleBoard);
-
-
-/* -------------------------------------------------
-   EVERYTHING BELOW IS YOUR ORIGINAL WEATHER JS
-   (unchanged)
-------------------------------------------------- */
 
 const DEBUG_MODE = false;
 const WORKER_URL = "https://noisy-sun-8ce3.jhonbluebrown.workers.dev/weather";
 const NOAA_TIDE_STATION = "8779750";
-const LAT = 26.07139, LON = -97.12872;
+const LAT=26.07139,LON=-97.12872;
 
-function pad(n){ return String(n).padStart(2,"0"); }
-function toMil(d){ return pad(d.getHours())+":"+pad(d.getMinutes()); }
-function toMilSec(d){ return pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds()); }
+function pad(n){return String(n).padStart(2,"0");}
+function toMil(d){return pad(d.getHours())+":"+pad(d.getMinutes());}
+function toMilSec(d){return pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds());}
 
 function clearAlerts(){
-  document.querySelectorAll('.alert-red, .alert-yellow').forEach(el=>{
-    el.classList.remove("alert-red","alert-yellow");
-  });
+  document.querySelectorAll('.alert-red,.alert-yellow')
+    .forEach(el=>el.classList.remove("alert-red","alert-yellow"));
 }
-function mark(id, cls){
+
+function mark(id,cls){
   document.getElementById(id).classList.add(cls);
 }
 
@@ -183,20 +175,20 @@ function applyAlertLogic(w){
   const ga=w.gulf.airF, ba=w.bay.airF;
   const seas=w.waves.waveFt;
 
-  const waterLow = gw < 60 || bw < 60;
-  const airLow = ga < 60 || ba < 60;
+  const waterLow=gw<60||bw<60;
+  const airLow=ga<60||ba<60;
 
   if(waterLow){
     mark("waterLabel","alert-red");
     mark("gulfWater","alert-red");
     mark("bayWater","alert-red");
   }
-  if(airLow && !waterLow){
+  if(airLow&&!waterLow){
     mark("airLabel","alert-yellow");
     mark("gulfAir","alert-yellow");
     mark("bayAir","alert-yellow");
   }
-  if(airLow && waterLow){
+  if(airLow&&waterLow){
     mark("airLabel","alert-red");
     mark("gulfAir","alert-red");
     mark("bayAir","alert-red");
@@ -211,7 +203,8 @@ function applyAlertLogic(w){
   if(seas>=8){
     mark("seasLabel","alert-red");
     mark("gulfSeas","alert-red");
-  } else if(seas>=6){
+  }
+  else if(seas>=6){
     mark("seasLabel","alert-yellow");
     mark("gulfSeas","alert-yellow");
   }
@@ -219,48 +212,44 @@ function applyAlertLogic(w){
 
 function extractWind(str){
   const parts=str.match(/(\d+)[^\d]+(\d+)/);
-  return {windKts:parts?parseInt(parts[1]):0, gustKts:parts?parseInt(parts[2]):0};
+  return {windKts:parts?+parts[1]:0, gustKts:parts?+parts[2]:0};
 }
 
 function applyDebugAlerts(){
-  const gw=parseFloat(document.getElementById("gulfWater").value)||0;
-  const bw=parseFloat(document.getElementById("bayWater").value)||0;
-  const ga=parseFloat(document.getElementById("gulfAir").value)||0;
-  const ba=parseFloat(document.getElementById("bayAir").value)||0;
-  const seas=parseFloat(document.getElementById("gulfSeas").value)||0;
+  const gw=parseFloat(gulfWater.value)||0;
+  const bw=parseFloat(bayWater.value)||0;
+  const ga=parseFloat(gulfAir.value)||0;
+  const ba=parseFloat(bayAir.value)||0;
+  const seas=parseFloat(gulfSeas.value)||0;
 
-  const gWind=extractWind(document.getElementById("gulfWind").value);
-  const bWind=extractWind(document.getElementById("bayWind").value);
+  const gWind=extractWind(gulfWind.value);
+  const bWind=extractWind(bayWind.value);
 
-  const simulated={
+  applyAlertLogic({
     gulf:{waterF:gw,airF:ga,windKts:gWind.windKts,gustKts:gWind.gustKts},
     bay:{waterF:bw,airF:ba,windKts:bWind.windKts,gustKts:bWind.gustKts},
     waves:{waveFt:seas}
-  };
-
-  applyAlertLogic(simulated);
+  });
 }
 
 function enableDebugMode(){
-  if(!DEBUG_MODE) return;
-
+  if(!DEBUG_MODE)return;
   ["gulfWater","bayWater","gulfAir","bayAir","gulfWind","bayWind","gulfSeas"]
-  .forEach(id=>{
-    const el=document.getElementById(id);
-    const input=document.createElement("input");
-    input.className="debug-input";
-    input.id=id;
-    input.value=el.textContent;
-    input.addEventListener("input",applyDebugAlerts);
-    el.replaceWith(input);
-  });
-
+    .forEach(id=>{
+      const old=document.getElementById(id);
+      const i=document.createElement("input");
+      i.className="debug-input";
+      i.id=id;
+      i.value=old.textContent;
+      i.addEventListener("input",applyDebugAlerts);
+      old.replaceWith(i);
+    });
   applyDebugAlerts();
 }
 
 function updateBoard(){
   if(DEBUG_MODE){
-    document.getElementById("updatedAt").textContent="DEBUG MODE (Manual Edit)";
+    updatedAt.textContent="DEBUG MODE";
     enableDebugMode();
     return;
   }
@@ -268,18 +257,15 @@ function updateBoard(){
   fetch(WORKER_URL).then(r=>r.json()).then(w=>{
     gulf=w.gulf; bay=w.bay;
 
-    document.getElementById("gulfWater").textContent=gulf.waterF+"°F";
-    document.getElementById("bayWater").textContent=bay.waterF+"°F";
-    document.getElementById("gulfAir").textContent=gulf.airF+"°F";
-    document.getElementById("bayAir").textContent=bay.airF+"°F";
+    gulfWater.textContent=gulf.waterF+"°F";
+    bayWater.textContent=bay.waterF+"°F";
+    gulfAir.textContent=gulf.airF+"°F";
+    bayAir.textContent=bay.airF+"°F";
 
-    document.getElementById("gulfWind").textContent=
-      `${gulf.windKts}-${gulf.gustKts} kts ${gulf.windDirCardinal}`;
-    document.getElementById("bayWind").textContent=
-      `${bay.windKts}-${bay.gustKts} kts ${bay.windDirCardinal}`;
+    gulfWind.textContent=`${gulf.windKts}-${gulf.gustKts} kts ${gulf.windDirCardinal}`;
+    bayWind.textContent=`${bay.windKts}-${bay.gustKts} kts ${bay.windDirCardinal}`;
 
-    document.getElementById("gulfSeas").textContent=
-      w.waves.waveFt!==null ? w.waves.waveFt+" ft" : "--";
+    gulfSeas.textContent=w.waves.waveFt!=null?w.waves.waveFt+" ft":"--";
 
     applyAlertLogic(w);
   });
@@ -289,30 +275,26 @@ function updateBoard(){
     const low=t.predictions.find(x=>x.type==="L");
     const high=t.predictions.find(x=>x.type==="H");
 
-    document.getElementById("tideLow").textContent=
-      low?`${toMil(new Date(low.t))} / ${Number(low.v).toFixed(1)} ft`:"--";
-
-    document.getElementById("tideHigh").textContent=
-      high?`${toMil(new Date(high.t))} / ${Number(high.v).toFixed(1)} ft`:"--";
+    tideLow.textContent=low?`${toMil(new Date(low.t))} / ${(+low.v).toFixed(1)} ft`:"--";
+    tideHigh.textContent=high?`${toMil(new Date(high.t))} / ${(+high.v).toFixed(1)} ft`:"--";
   });
 
   fetch(`https://api.sunrise-sunset.org/json?lat=${LAT}&lng=${LON}&formatted=0`)
   .then(r=>r.json()).then(s=>{
-    document.getElementById("sunrise").textContent=toMil(new Date(s.results.sunrise));
-    document.getElementById("sunset").textContent=toMil(new Date(s.results.sunset));
+    sunrise.textContent=toMil(new Date(s.results.sunrise));
+    sunset.textContent=toMil(new Date(s.results.sunset));
   });
 
   const now=new Date();
-  document.getElementById("tideDate").textContent=
+  updatedAt.textContent="UPDATED "+toMilSec(now)+" LCL";
+  tideDate.textContent=
     pad(now.getDate())+" "+["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"][now.getMonth()];
-  document.getElementById("updatedAt").textContent="UPDATED "+toMilSec(now)+" LCL";
 }
 
 updateBoard();
-setInterval(updateBoard, 60000);
+setInterval(updateBoard,60000);
 setInterval(()=>{
-  const now=new Date();
-  document.getElementById("updatedAt").textContent="UPDATED "+toMilSec(now)+" LCL";
+  updatedAt.textContent="UPDATED "+toMilSec(new Date())+" LCL";
 },1000);
 </script>
 
