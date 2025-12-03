@@ -15,6 +15,7 @@
   --alert-yellow:#facc15;
 }
 
+/* FULLSCREEN CANVAS */
 body {
   margin:0;
   width:100vw;
@@ -28,6 +29,7 @@ body {
   align-items:center;
 }
 
+/* MAIN BOARD */
 .board {
   width:100%;
   height:100%;
@@ -38,6 +40,7 @@ body {
   gap:5vh;
 }
 
+/* TOP BAR */
 .title {
   display:flex;
   justify-content:space-between;
@@ -45,18 +48,25 @@ body {
   font-size:clamp(2rem,4vw,4rem);
 }
 
+/* MAIN GRID */
 .grid {
   flex:1;
   width:100%;
+
   display:grid;
-  grid-template-columns:1fr 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+
   row-gap:4vh;
   column-gap:4vw;
+
   font-size:clamp(1.4rem,2.8vw,3.2rem);
 }
 
-.cell { white-space:nowrap; }
+.cell {
+  white-space:nowrap;
+}
 
+/* ALERT COLORS */
 .alert-red {
   background:var(--alert-red);
   color:black !important;
@@ -74,78 +84,102 @@ body {
   width:100%;
   display:inline-block;
 }
+
+/* DEBUG INPUTS */
+input.debug-input {
+  width:100%;
+  font-size:inherit;
+  padding:0.25em 0.4em;
+}
 </style>
 </head>
 
 <body>
-<div class="board">
-  <div class="title">
-    <div>WEATHER</div>
-    <div id="updatedAt">LOADING…</div>
+  <div class="board">
+    <!-- TOP BAR -->
+    <div class="title">
+      <div>WEATHER</div>
+      <div id="updatedAt">LOADING…</div>
+    </div>
+
+    <!-- 4-COLUMN GRID -->
+    <div class="grid">
+
+      <!-- HEADER ROW -->
+      <div class="cell"></div>
+      <div class="cell">GULF</div>
+      <div class="cell">BAY</div>
+      <div class="cell">TIDES: <span id="tideDate"></span></div>
+
+      <!-- WATER -->
+      <div class="cell"><span id="waterLabel">WATER</span></div>
+      <div class="cell"><span id="gulfWater">--</span></div>
+      <div class="cell"><span id="bayWater">--</span></div>
+      <div class="cell">LOW: <span id="tideLow">--</span></div>
+
+      <!-- AIR -->
+      <div class="cell"><span id="airLabel">AIR</span></div>
+      <div class="cell"><span id="gulfAir">--</span></div>
+      <div class="cell"><span id="bayAir">--</span></div>
+      <div class="cell">HIGH: <span id="tideHigh">--</span></div>
+
+      <!-- WINDS -->
+      <div class="cell"><span id="windLabel">WIND</span></div>
+      <div class="cell"><span id="gulfWind">--</span></div>
+      <div class="cell"><span id="bayWind">--</span></div>
+      <div class="cell">SUNRISE: <span id="sunrise">--</span></div>
+
+      <!-- SEAS -->
+      <div class="cell"><span id="seasLabel">SEAS</span></div>
+      <div class="cell"><span id="gulfSeas">--</span></div>
+      <div class="cell"><span id="baySeas">N/A</span></div>
+      <div class="cell">SUNSET: <span id="sunset">--</span></div>
+
+    </div>
   </div>
-
-  <div class="grid">
-    <div></div><div>GULF</div><div>BAY</div><div>TIDES: <span id="tideDate"></span></div>
-
-    <div><span id="waterLabel">WATER</span></div>
-    <div><span id="gulfWater">--</span></div>
-    <div><span id="bayWater">--</span></div>
-    <div>LOW: <span id="tideLow">--</span></div>
-
-    <div><span id="airLabel">AIR</span></div>
-    <div><span id="gulfAir">--</span></div>
-    <div><span id="bayAir">--</span></div>
-    <div>HIGH: <span id="tideHigh">--</span></div>
-
-    <div><span id="windLabel">WIND</span></div>
-    <div><span id="gulfWind">--</span></div>
-    <div><span id="bayWind">--</span></div>
-    <div>SUNRISE: <span id="sunrise">--</span></div>
-
-    <div><span id="seasLabel">SEAS</span></div>
-    <div><span id="gulfSeas">--</span></div>
-    <div><span id="baySeas">N/A</span></div>
-    <div>SUNSET: <span id="sunset">--</span></div>
-  </div>
-</div>
 
 <script>
-/* ======================================================== */
-/* GLOBAL CONFIG + OFFLINE STATE */
-/* ======================================================== */
+/* -------------------------------------------- */
+/*  GLOBALS                                     */
+/* -------------------------------------------- */
 
-let offlineMode = false;
-
+const DEBUG_MODE=false;
 const WORKER_URL="https://noisy-sun-8ce3.jhonbluebrown.workers.dev/weather";
 const NOAA_TIDE_STATION="8779750";
 const LAT=26.07139, LON=-97.12872;
+
+let offlineMode = false;
+let lastUpdateTime = null;
+
+/* -------------------------------------------- */
+/*  UTILITIES                                   */
+/* -------------------------------------------- */
 
 function pad(n){return String(n).padStart(2,"0");}
 function toMil(d){return pad(d.getHours())+":"+pad(d.getMinutes());}
 function toMilSec(d){return pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds());}
 
-/* ======================================================== */
-/* ALERT LOGIC */
-/* ======================================================== */
-
+/* CLEAR ALERTS */
 function clearAlerts(){
   document.querySelectorAll('.alert-red,.alert-yellow')
     .forEach(el=>el.classList.remove("alert-red","alert-yellow"));
 }
 
+/* ADD CLASS */
 function mark(id,cls){
   document.getElementById(id).classList.add(cls);
 }
 
+/* ALERT LOGIC */
 function applyAlertLogic(w){
   clearAlerts();
 
   const gw=w.gulf.waterF, bw=w.bay.waterF;
-  const ga=w.gulf.airF, ba=w.bay.airF;
+  const ga=w.gulf.airF,   ba=w.bay.airF;
   const seas=w.waves.waveFt;
 
-  const waterLow = (gw<60 || bw<60);
-  const airLow = (ga<60 || ba<60);
+  const waterLow = gw<60 || bw<60;
+  const airLow   = ga<60 || ba<60;
 
   if(waterLow){
     mark("waterLabel","alert-red");
@@ -182,66 +216,86 @@ function applyAlertLogic(w){
   }
 }
 
-/* ======================================================== */
-/* OFFLINE FALLBACK RENDER */
-/* ======================================================== */
+/* -------------------------------------------- */
+/*      RENDER FUNCTIONS                        */
+/* -------------------------------------------- */
 
-function applyCachedWeather(w){
-  gulfWater.textContent = w.gulf.waterF+"°F";
-  bayWater.textContent  = w.bay.waterF+"°F";
-  gulfAir.textContent   = w.gulf.airF+"°F";
-  bayAir.textContent    = w.bay.airF+"°F";
+function renderLiveWeather(w){
+  gulfWater.textContent=w.gulf.waterF+"°F";
+  bayWater.textContent=w.bay.waterF+"°F";
+  gulfAir.textContent=w.gulf.airF+"°F";
+  bayAir.textContent=w.bay.airF+"°F";
 
-  gulfWind.textContent  = `${w.gulf.windKts}-${w.gulf.gustKts} kts ${w.gulf.windDirCardinal}`;
-  bayWind.textContent   = `${w.bay.windKts}-${w.bay.gustKts} kts ${w.bay.windDirCardinal}`;
+  gulfWind.textContent=`${w.gulf.windKts}-${w.gulf.gustKts} kts ${w.gulf.windDirCardinal}`;
+  bayWind.textContent=`${w.bay.windKts}-${w.bay.gustKts} kts ${w.bay.windDirCardinal}`;
 
-  gulfSeas.textContent  = w.waves.waveFt!=null ? w.waves.waveFt+" ft" : "--";
+  gulfSeas.textContent = w.waves.waveFt!=null ? w.waves.waveFt+" ft" : "--";
 
   applyAlertLogic(w);
 
-  updatedAt.textContent="OFFLINE — LAST SAVED DATA";
-  updatedAt.style.color="#facc15";
+  updatedAt.style.color="#e5e7eb";
+  updatedAt.textContent = "UPDATED " + toMilSec(lastUpdateTime) + " LCL";
 }
 
-/* ======================================================== */
-/* MAIN UPDATE FUNCTION */
-/* ======================================================== */
+function applyOfflineDisplay(){
+  const cached = localStorage.getItem("lastWeather");
+
+  if(!cached){
+    updatedAt.textContent="OFFLINE MODE — NO SAVED DATA";
+    updatedAt.style.color="#ff4444";
+    return;
+  }
+
+  const w = JSON.parse(cached);
+
+  gulfWater.textContent=w.gulf.waterF+"°F";
+  bayWater.textContent=w.bay.waterF+"°F";
+  gulfAir.textContent=w.gulf.airF+"°F";
+  bayAir.textContent=w.bay.airF+"°F";
+
+  gulfWind.textContent=`${w.gulf.windKts}-${w.gulf.gustKts} kts ${w.gulf.windDirCardinal}`;
+  bayWind.textContent=`${w.bay.windKts}-${w.bay.gustKts} kts ${w.bay.windDirCardinal}`;
+
+  gulfSeas.textContent=(w.waves.waveFt!=null? w.waves.waveFt+" ft" : "--");
+
+  applyAlertLogic(w);
+
+  updatedAt.style.color="#facc15";
+  updatedAt.textContent =
+    "OFFLINE MODE — USING LAST GOOD DATA (" + 
+    (lastUpdateTime ? toMilSec(lastUpdateTime) : "--:--:--") +
+    " LCL)";
+}
+
+/* -------------------------------------------- */
+/*     MAIN WEATHER UPDATE FUNCTION             */
+/* -------------------------------------------- */
 
 function updateBoard(){
-  /* ---------------------- WEATHER ----------------------- */
+
   fetch(WORKER_URL)
-  .then(r=>r.json())
-  .then(w=>{
-    offlineMode = false;
+    .then(async r=>{
+      if(!r.ok) throw new Error("NETWORK FAIL");
+      const data = await r.json();
 
-    localStorage.setItem("lastWeather", JSON.stringify(w));
+      if(!data.gulf || !data.bay || !data.waves){
+        throw new Error("BAD DATA FORMAT");
+      }
 
-    gulfWater.textContent=w.gulf.waterF+"°F";
-    bayWater.textContent=w.bay.waterF+"°F";
-    gulfAir.textContent=w.gulf.airF+"°F";
-    bayAir.textContent=w.bay.airF+"°F";
+      offlineMode = false;
+      lastUpdateTime = new Date();
 
-    gulfWind.textContent=`${w.gulf.windKts}-${w.gulf.gustKts} kts ${w.gulf.windDirCardinal}`;
-    bayWind.textContent=`${w.bay.windKts}-${w.bay.gustKts} kts ${w.bay.windDirCardinal}`;
+      localStorage.setItem("lastWeather", JSON.stringify(data));
 
-    gulfSeas.textContent = w.waves.waveFt!=null ? w.waves.waveFt+" ft" : "--";
+      renderLiveWeather(data);
+    })
+    .catch(err=>{
+      console.warn("OFFLINE MODE ACTIVATED:", err);
+      offlineMode = true;
+      applyOfflineDisplay();
+    });
 
-    applyAlertLogic(w);
-  })
-  .catch(err=>{
-    console.warn("WEATHER FETCH FAILED — OFFLINE MODE", err);
-    offlineMode = true;
-
-    const cached = localStorage.getItem("lastWeather");
-    if(cached){
-      applyCachedWeather(JSON.parse(cached));
-    } else {
-      updatedAt.textContent="OFFLINE — NO SAVED DATA";
-      updatedAt.style.color="#f00";
-    }
-  });
-
-  /* ---------------------- TIDES ----------------------- */
+  /* TIDES + SUN TIMES — these may fail; that's fine */
   fetch(`https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&station=${NOAA_TIDE_STATION}&date=today&interval=hilo&units=english&time_zone=lst_ldt&datum=MLLW&format=json`)
     .then(r=>r.json())
     .then(t=>{
@@ -253,50 +307,53 @@ function updateBoard(){
 
       tideHigh.textContent = high ?
         `${toMil(new Date(high.t))} / ${(+high.v).toFixed(1)} ft` : "--";
-    });
+    }).catch(()=>{});
 
-  /* ---------------------- SUN ------------------------- */
   fetch(`https://api.sunrise-sunset.org/json?lat=${LAT}&lng=${LON}&formatted=0`)
     .then(r=>r.json())
     .then(s=>{
       sunrise.textContent = toMil(new Date(s.results.sunrise));
       sunset.textContent  = toMil(new Date(s.results.sunset));
-    });
+    }).catch(()=>{});
 
-  /* ---------------------- TIMESTAMP -------------------- */
+  /* DATE */
   const now=new Date();
-  updatedAt.style.color="#e5e7eb";
-  updatedAt.textContent="UPDATED "+toMilSec(now)+" LCL";
-
   const dd=pad(now.getDate());
   const mm=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"][now.getMonth()];
   const yy=String(now.getFullYear()).slice(2);
-
   tideDate.textContent=`${dd} ${mm} ${yy}`;
 }
 
-/* ======================================================== */
-/* LOOP + SAFE RELOAD */
-/* ======================================================== */
+/* -------------------------------------------- */
+/*     CLOCK UPDATE — ONLY WHEN ONLINE          */
+/* -------------------------------------------- */
 
-updateBoard();
-setInterval(updateBoard,60000);
+setInterval(()=>{
+  if(!offlineMode && lastUpdateTime){
+    updatedAt.textContent="UPDATED "+toMilSec(lastUpdateTime)+" LCL";
+  }
+},1000);
+
+/* -------------------------------------------- */
+/* SAFE HARD RELOAD — ONLY IF ONLINE            */
+/* -------------------------------------------- */
 
 setInterval(()=>{
   if(!offlineMode){
     location.reload();
   } else {
-    console.warn("Offline — skipped auto reload");
+    console.warn("SKIPPED AUTO RELOAD — OFFLINE MODE");
   }
-}, 5 * 60 * 1000);
+},5*60*1000); // 5 min
 
-/* Live clock text */
-setInterval(()=>{
-  if(!offlineMode){
-    updatedAt.textContent="UPDATED "+toMilSec(new Date())+" LCL";
-  }
-},1000);
+/* -------------------------------------------- */
+/* START                                         */
+/* -------------------------------------------- */
+
+updateBoard();
+setInterval(updateBoard,60000);
 
 </script>
+
 </body>
 </html>
