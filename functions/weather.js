@@ -2,7 +2,7 @@ import fetch from "node-fetch";
 import { getStore } from "@netlify/blobs";
 
 // -------------------- CONFIG --------------------
-const STORMGLASS_KEY = "YOUR_REAL_STORMGLASS_KEY";
+const STORMGLASS_KEY = "190fede0-cfd3-11f0-b4de-0242ac130003-190fee6c-cfd3-11f0-b4de-0242ac130003";
 const WAVES_LAT = 26.071389;
 const WAVES_LON = -97.128722;
 
