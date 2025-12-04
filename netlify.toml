@@ -1,0 +1,10 @@
+
+[build]
+  functions = "functions"
+  publish = "public"
+
+[[redirects]]
+  from = "/weather"
+  to = "/.netlify/functions/weather"
+  status = 200
+  force = true
