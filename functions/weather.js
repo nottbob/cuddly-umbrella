@@ -1,4 +1,10 @@
-import fetch from "node-fetch";
+// ======================================================================
+// WEATHER FUNCTION WITH NOAA SPA SUNRISE/SUNSET + STORMGLASS CACHE
+// ======================================================================
+
+// ❌ REMOVE THIS — Netlify already provides fetch natively
+// import fetch from "node-fetch";
+
 import { getStore } from "@netlify/blobs";
 
 // -------------------- CONFIG --------------------
@@ -10,6 +16,7 @@ const SUN_LAT = 26.07139;
 const SUN_LON = -97.12872;
 
 const store = getStore("wave-cache");   // persistent Netlify blob store
+
 
 export const handler = async () => {
   try {
