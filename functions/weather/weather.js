@@ -1,4 +1,4 @@
-import pdf from "pdf-parse-es5";
+import pdf from "pdf-parse";
 import { getStore } from "@netlify/blobs";
 
 // ------------------------ CONFIG ------------------------
