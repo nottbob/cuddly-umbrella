@@ -7,236 +7,176 @@
 
 <style>
 :root {
---bg:#020617;
---text:#e5e7eb;
+  --bg:#020617;
+  --text:#e5e7eb;
   --border:#1f2937;
---mono:"SF Mono",Menlo,Consolas,monospace;
---alert-red:#7f1d1d;
---alert-yellow:#facc15;
+  --mono:"SF Mono",Menlo,Consolas,monospace;
+  --alert-red:#7f1d1d;
+  --alert-yellow:#facc15;
 }
 
 body {
-margin:0;
-width:100vw;
-height:100vh;
-overflow:hidden;
-background:radial-gradient(circle at top,#1e293b 0,#020617 55%);
-color:var(--text);
-font-family:var(--mono);
-display:flex;
-justify-content:center;
-align-items:center;
+  margin:0;
+  width:100vw;
+  height:100vh;
+  overflow:hidden;
+  background:radial-gradient(circle at top,#1e293b 0,#020617 55%);
+  color:var(--text);
+  font-family:var(--mono);
+  display:flex;
+  justify-content:center;
+  align-items:center;
 }
 
 .board {
-width:100%;
-height:100%;
-padding:4vh 4vw;
-box-sizing:border-box;
-display:flex;
-flex-direction:column;
-gap:5vh;
+  width:100%;
+  height:100%;
+  padding:4vh 4vw;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  gap:5vh;
 }
 
 .title {
-display:flex;
-justify-content:space-between;
-align-items:center;
-font-size:clamp(2rem,4vw,4rem);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:clamp(2rem,4vw,4rem);
 }
 
 .grid {
-flex:1;
-width:100%;
-display:grid;
-grid-template-columns: 1fr 1fr 1fr 1fr;
-row-gap:4vh;
-column-gap:4vw;
-font-size:clamp(1.4rem,2.8vw,3.2rem);
+  flex:1;
+  width:100%;
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  row-gap:4vh;
+  column-gap:4vw;
+  font-size:clamp(1.4rem,2.8vw,3.2rem);
 }
 
 .cell { white-space:nowrap; }
 
-.alert-red {
-background:var(--alert-red);
-color:black !important;
-padding:0.25em 0.4em;
-border-radius:6px;
-width:100%;
-display:inline-block;
+.alert-red, .alert-yellow {
+  padding:0.25em 0.4em;
+  border-radius:6px;
+  width:100%;
+  display:inline-block;
+  color:black !important;
 }
-
-.alert-yellow {
-background:var(--alert-yellow);
-color:black !important;
-padding:0.25em 0.4em;
-border-radius:6px;
-width:100%;
-display:inline-block;
-}
+.alert-red { background:var(--alert-red); }
+.alert-yellow { background:var(--alert-yellow); }
 </style>
 </head>
 
 <body>
 <div class="board">
-<div class="title">
-<div>WEATHER</div>
-<div id="updatedAt">LOADING…</div>
-</div>
+  <div class="title">
+    <div>WEATHER</div>
+    <div id="updatedAt">LOADING…</div>
+  </div>
 
-<div class="grid">
+  <div class="grid">
 
-<div class="cell"></div>
-<div class="cell">GULF</div>
-<div class="cell">BAY</div>
-<div class="cell">TIDES: <span id="tideDate"></span></div>
+    <div class="cell"></div>
+    <div class="cell">GULF</div>
+    <div class="cell">BAY</div>
+    <div class="cell">TIDES: <span id="tideDate"></span></div>
 
-<div class="cell"><span id="waterLabel">WATER</span></div>
-<div class="cell"><span id="gulfWater">--</span></div>
-<div class="cell"><span id="bayWater">--</span></div>
-<div class="cell">LOW: <span id="tideLow">--</span></div>
+    <div class="cell"><span id="waterLabel">WATER</span></div>
+    <div class="cell"><span id="gulfWater">--</span></div>
+    <div class="cell"><span id="bayWater">--</span></div>
+    <div class="cell">LOW: <span id="tideLow">--</span></div>
 
-<div class="cell"><span id="airLabel">AIR</span></div>
-<div class="cell"><span id="gulfAir">--</span></div>
-<div class="cell"><span id="bayAir">--</span></div>
-<div class="cell">HIGH: <span id="tideHigh">--</span></div>
+    <div class="cell"><span id="airLabel">AIR</span></div>
+    <div class="cell"><span id="gulfAir">--</span></div>
+    <div class="cell"><span id="bayAir">--</span></div>
+    <div class="cell">HIGH: <span id="tideHigh">--</span></div>
 
-<div class="cell"><span id="windLabel">WIND</span></div>
-<div class="cell"><span id="gulfWind">--</span></div>
-<div class="cell"><span id="bayWind">--</span></div>
-<div class="cell">SUNRISE: <span id="sunrise">--</span></div>
+    <div class="cell"><span id="windLabel">WIND</span></div>
+    <div class="cell"><span id="gulfWind">--</span></div>
+    <div class="cell"><span id="bayWind">--</span></div>
+    <div class="cell">SUNRISE: <span id="sunrise">--</span></div>
 
-<div class="cell"><span id="seasLabel">SEAS</span></div>
-<div class="cell"><span id="gulfSeas">--</span></div>
-<div class="cell"><span id="baySeas">N/A</span></div>
-<div class="cell">SUNSET: <span id="sunset">--</span></div>
+    <div class="cell"><span id="seasLabel">SEAS</span></div>
+    <div class="cell"><span id="gulfSeas">--</span></div>
+    <div class="cell"><span id="baySeas">N/A</span></div>
+    <div class="cell">SUNSET: <span id="sunset">--</span></div>
 
-</div>
+  </div>
 </div>
 
 <script>
 const WORKER_URL="https://sta-spi.netlify.app/.netlify/functions/weather";
 
-let offlineMode = false;
 let lastLiveUpdate = null;
 
-function pad(n){return String(n).padStart(2,"0");}
-function toHM(d){return pad(d.getHours())+":"+pad(d.getMinutes());}
 /* UTIL */
 function pad(n){ return String(n).padStart(2,"0"); }
 function toHM(d){ return pad(d.getHours())+":"+pad(d.getMinutes()); }
 
 /* CLEAR ALERTS */
 function clearAlerts(){
-document.querySelectorAll('.alert-red,.alert-yellow')
-.forEach(el=>el.classList.remove("alert-red","alert-yellow"));
+  document.querySelectorAll('.alert-red,.alert-yellow')
+    .forEach(el => el.classList.remove("alert-red","alert-yellow"));
 }
 
 function mark(id,cls){
-document.getElementById(id).classList.add(cls);
+  document.getElementById(id).classList.add(cls);
 }
 
-/* ALERTS */
+/* ALERT LOGIC */
 function applyAlertLogic(w){
-clearAlerts();
+  clearAlerts();
 
-const gw=w.gulf.waterF, bw=w.bay.waterF;
-const ga=w.gulf.airF,   ba=w.bay.airF;
-const seas=w.waves.waveFt;
+  const gw=w.gulf.waterF, bw=w.bay.waterF;
+  const ga=w.gulf.airF,   ba=w.bay.airF;
+  const seas=w.waves.waveFt;
 
-const waterLow = gw<60 || bw<60;
-const airLow   = ga<60 || ba<60;
+  const waterLow = (gw<60 || bw<60);
+  const airLow   = (ga<60 || ba<60);
 
-if(waterLow){
-    mark("waterLabel","alert-red");
-    mark("gulfWater","alert-red");
-    mark("waterLabel","alert-red"); 
-    mark("gulfWater","alert-red"); 
-mark("bayWater","alert-red");
-}
+  if(waterLow){
+      mark("waterLabel","alert-red");
+      mark("gulfWater","alert-red");
+      mark("bayWater","alert-red");
+  }
 
-if(airLow && !waterLow){
-mark("airLabel","alert-yellow");
-mark("gulfAir","alert-yellow");
-mark("bayAir","alert-yellow");
-}
+  if(airLow && !waterLow){
+      mark("airLabel","alert-yellow");
+      mark("gulfAir","alert-yellow");
+      mark("bayAir","alert-yellow");
+  }
 
-if(airLow && waterLow){
-mark("airLabel","alert-red");
-mark("gulfAir","alert-red");
-mark("bayAir","alert-red");
-}
+  if(airLow && waterLow){
+      mark("airLabel","alert-red");
+      mark("gulfAir","alert-red");
+      mark("bayAir","alert-red");
+  }
 
-  if(w.gulf.gustKts>=25 || w.bay.gustKts>=25 || w.gulf.windKts>=25 || w.bay.windKts>=25){
   if(w.gulf.gustKts>=25 || w.bay.gustKts>=25 ||
      w.gulf.windKts>=25 || w.bay.windKts>=25){
-mark("windLabel","alert-red");
-mark("gulfWind","alert-red");
-mark("bayWind","alert-red");
+      mark("windLabel","alert-red");
+      mark("gulfWind","alert-red");
+      mark("bayWind","alert-red");
+  }
+
+  if(seas>=8){
+      mark("seasLabel","alert-red");
+      mark("gulfSeas","alert-red");
+  } else if(seas>=6){
+      mark("seasLabel","alert-yellow");
+      mark("gulfSeas","alert-yellow");
+  }
 }
 
-if(seas>=8){
-mark("seasLabel","alert-red");
-mark("gulfSeas","alert-red");
-} else if(seas>=6){
-mark("seasLabel","alert-yellow");
-mark("gulfSeas","alert-yellow");
-}
-}
-
-/* RENDER LIVE */
+/* RENDER WEATHER */
 function renderLiveWeather(w){
-  gulfWater.textContent=w.gulf.waterF+"°F";
-  bayWater.textContent=w.bay.waterF+"°F";
-  gulfAir.textContent=w.gulf.airF+"°F";
-  bayAir.textContent=w.bay.airF+"°F";
   gulfWater.textContent = w.gulf.waterF + "°F";
   bayWater.textContent  = w.bay.waterF + "°F";
-  gulfAir.textContent   = w.gulf.airF + "°F";
-  bayAir.textContent    = w.bay.airF + "°F";
 
-  gulfWind.textContent=`${w.gulf.windKts}-${w.gulf.gustKts} kts ${w.gulf.windDirCardinal}`;
-  bayWind.textContent=`${w.bay.windKts}-${w.bay.gustKts} kts ${w.bay.windDirCardinal}`;
-  gulfWind.textContent = `${w.gulf.windKts}-${w.gulf.gustKts} kts ${w.gulf.windDirCardinal}`;
-  bayWind.textContent  = `${w.bay.windKts}-${w.bay.gustKts} kts ${w.bay.windDirCardinal}`;
-
-gulfSeas.textContent = w.waves.waveFt != null ? w.waves.waveFt+" ft" : "--";
-
-  sunrise.textContent = w.sun.sunrise;
-  sunset.textContent  = w.sun.sunset;
-  sunrise.textContent = w.sun.sunrise ?? "--";
-  sunset.textContent  = w.sun.sunset ?? "--";
-
-  tideLow.textContent  = w.tides.low  ? `${toHM(new Date(w.tides.low.t))} / ${w.tides.low.v} ft` : "--";
-  tideHigh.textContent = w.tides.high ? `${toHM(new Date(w.tides.high.t))} / ${w.tides.high.v} ft` : "--";
-  tideLow.textContent  = w.tides.low  ? `${toHM(new Date(w.tides.low.t))} / ${(+w.tides.low.v).toFixed(1)} ft` : "--";
-  tideHigh.textContent = w.tides.high ? `${toHM(new Date(w.tides.high.t))} / ${(+w.tides.high.v).toFixed(1)} ft` : "--";
-
-applyAlertLogic(w);
-
-updatedAt.style.color="#e5e7eb";
-updatedAt.textContent = "UPDATED " + toHM(lastLiveUpdate) + " LCL";
-}
-
-/* OFFLINE RENDER */
-function applyOfflineDisplay(){
-const cached = localStorage.getItem("lastWeather");
-const cachedTime = localStorage.getItem("lastWeatherTime");
-
-if(!cached){
-    updatedAt.textContent="OFFLINE — NO CACHE";
-    updatedAt.textContent="OFFLINE — NO CACHED DATA";
-updatedAt.style.color="#facc15";
-return;
-}
-
-const w = JSON.parse(cached);
-  renderLiveWeather(w);
-
-  gulfWater.textContent = w.gulf.waterF + "°F";
-  bayWater.textContent  = w.bay.waterF + "°F";
-  gulfAir.textContent   = w.gulf.airF + "°F";
-  bayAir.textContent    = w.bay.airF + "°F";
+  gulfAir.textContent = w.gulf.airF + "°F";
+  bayAir.textContent  = w.bay.airF  + "°F";
 
   gulfWind.textContent = `${w.gulf.windKts}-${w.gulf.gustKts} kts ${w.gulf.windDirCardinal}`;
   bayWind.textContent  = `${w.bay.windKts}-${w.bay.gustKts} kts ${w.bay.windDirCardinal}`;
@@ -244,76 +184,75 @@ const w = JSON.parse(cached);
   gulfSeas.textContent = w.waves.waveFt != null ? w.waves.waveFt + " ft" : "--";
 
   sunrise.textContent = w.sun.sunrise ?? "--";
-  sunset.textContent  = w.sun.sunset ?? "--";
+  sunset.textContent  = w.sun.sunset  ?? "--";
 
-  tideLow.textContent  = w.tides.low  ? `${toHM(new Date(w.tides.low.t))} / ${(+w.tides.low.v).toFixed(1)} ft` : "--";
-  tideHigh.textContent = w.tides.high ? `${toHM(new Date(w.tides.high.t))} / ${(+w.tides.high.v).toFixed(1)} ft` : "--";
+  /* NEW: Tides are arrays of strings */
+  tideLow.textContent  = w.tides.low.length  ? w.tides.low.join(" | ")  : "--";
+  tideHigh.textContent = w.tides.high.length ? w.tides.high.join(" | ") : "--";
 
   applyAlertLogic(w);
 
-updatedAt.style.color="#facc15";
-  updatedAt.textContent = "OFFLINE — Last Live: " + (cachedTime ?? "UNKNOWN");
-  updatedAt.textContent = cachedTime
-    ? `OFFLINE — Last Live: ${cachedTime}`
-    : "OFFLINE — (no timestamp)";
+  updatedAt.style.color="#e5e7eb";
+  updatedAt.textContent = "UPDATED " + toHM(lastLiveUpdate);
+}
+
+/* OFFLINE MODE */
+function applyOfflineDisplay(){
+  const cached = localStorage.getItem("lastWeather");
+  const time = localStorage.getItem("lastWeatherTime");
+
+  if(!cached){
+      updatedAt.textContent="OFFLINE — NO CACHED DATA";
+      updatedAt.style.color="#facc15";
+      return;
+  }
+
+  const w = JSON.parse(cached);
+  renderLiveWeather(w);
+
+  updatedAt.style.color="#facc15";
+  updatedAt.textContent = "OFFLINE — Last Live: " + (time ?? "UNKNOWN");
 }
 
 /* MAIN UPDATE */
 function updateBoard(){
-fetch(WORKER_URL)
-    .then(r=>r.json())
-    .then(data=>{
-      offlineMode=false;
+  fetch(WORKER_URL)
     .then(r => {
       if(!r.ok) throw new Error();
       return r.json();
     })
     .then(w => {
-      offlineMode = false;
-
-lastLiveUpdate = new Date();
-      localStorage.setItem("lastWeather", JSON.stringify(data));
+      lastLiveUpdate = new Date();
       localStorage.setItem("lastWeather", JSON.stringify(w));
-localStorage.setItem("lastWeatherTime", toHM(lastLiveUpdate));
-      renderLiveWeather(data);
-
+      localStorage.setItem("lastWeatherTime", toHM(lastLiveUpdate));
       renderLiveWeather(w);
-})
-    .catch(()=>{
-      offlineMode=true;
-    .catch(() => {
-      offlineMode = true;
-applyOfflineDisplay();
-});
+    })
+    .catch(() => applyOfflineDisplay());
 
-updateDate();
+  updateDate();
 }
 
-/* DATE */
+/* DATE IN HEADER */
 function updateDate(){
-const now=new Date();
-const dd=pad(now.getDate());
-const mm=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"][now.getMonth()];
-const yy=String(now.getFullYear()).slice(2);
+  const now=new Date();
+  const dd=pad(now.getDate());
+  const mm=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"][now.getMonth()];
+  const yy=String(now.getFullYear()).slice(2);
 
-tideDate.textContent=`${dd} ${mm} ${yy}`;
+  tideDate.textContent=`${dd} ${mm} ${yy}`;
 }
 
-/* INITIAL LOAD */
+/* INITIAL */
 updateBoard();
 
-(function sync(){
+/* SYNC TO MINUTE */
+(function syncToMinute(){
   const now=new Date();
   const ms=(60-now.getSeconds())*1000 - now.getMilliseconds();
-/* SYNC EVERY MINUTE */
-(function syncToMinute(){
-  const now = new Date();
-  const ms = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
-setTimeout(()=>{
-updateBoard();
-    setInterval(updateBoard,60000);
-  },ms);
-    setInterval(updateBoard, 60000);
+
+  setTimeout(()=>{
+      updateBoard();
+      setInterval(updateBoard,60000);
   }, ms);
 })();
 </script>
