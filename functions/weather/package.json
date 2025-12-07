@@ -1,8 +1,16 @@
 {
-  "name": "weather-function",
+  "name": "weather",
   "version": "1.0.0",
-  "type": "module",
+  "description": "",
+  "main": "weather.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
   "dependencies": {
-    "pdf-parse": "^1.1.1"
+    "node-fetch": "^2.7.0"
   }
 }

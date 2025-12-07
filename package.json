@@ -1,5 +1,14 @@
 {
-  "name": "spi-weatherboard",
+  "name": "spi-main-3",
   "version": "1.0.0",
-  "private": true
+  "description": "SPI Weatherboard",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo \"No build step\""
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {}
 }
