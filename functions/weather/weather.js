@@ -1,6 +1,5 @@
 // ======================================================================
-// SPI WEATHER BOARD — FULL SERVER FUNCTION
-// NOAA + Stormglass + USHarbors (TSV Parser)
+// SPI WEATHER BOARD — FULL SERVER FUNCTION (TIDE FIX: HH:MM STRINGS)
 // ======================================================================
 
 // ----------------------------------------------------------
@@ -20,7 +19,7 @@ const STORMGLASS_URL =
 // ----------------------------------------------------------
 async function githubGet(path) {
   if (!GITHUB_TOKEN || !GITHUB_REPO || !GITHUB_BRANCH) {
-    console.log("[GitHub] Missing environment variables");
+    console.log("[GitHub] Missing env vars");
     return null;
   }
 
@@ -119,7 +118,7 @@ function pickCurrentWave(f) {
 
 
 // ======================================================================
-// USHARBORS — TSV PARSER (REQUIRES .tsv FILE IN GITHUB)
+// USHARBORS — TSV PARSER (RETURNS "HH:MM" STRINGS — **NO TIMEZONE**)
 // ======================================================================
 function parseUsharborsTSV(tsv) {
   console.log("[USHarbors] Parsing TSV…");
@@ -130,25 +129,10 @@ function parseUsharborsTSV(tsv) {
   for (const line of lines) {
     if (!line) continue;
 
-    const cols = line.split("\t");
+    const cols = line.split("\t");   // ← FULL PRESERVATION OF EMPTY CELLS
 
-    // Must start with numeric day
     const day = parseInt(cols[0], 10);
     if (!Number.isInteger(day)) continue;
-
-    // Expected column mapping:
-    // 0 Day
-    // 1 DOW
-    // 2 High AM Time
-    // 3 High AM Ft
-    // 4 High PM Time
-    // 5 High PM Ft
-    // 6 Low AM Time
-    // 7 Low AM Ft
-    // 8 Low PM Time
-    // 9 Low PM Ft
-    // 10 Sunrise
-    // 11 Sunset
 
     const [
       _day,
@@ -160,22 +144,27 @@ function parseUsharborsTSV(tsv) {
       sunrise, sunset
     ] = cols;
 
-    const rec = { high: [], low: [], sunrise: null, sunset: null };
+    const rec = {
+      high: [],
+      low: [],
+      sunrise: null,
+      sunset: null
+    };
 
     const validTime = t => /^\d{1,2}:\d{2}$/.test(t);
     const validNum  = v => /^-?\d+(\.\d+)?$/.test(v);
 
     if (validTime(highAMt) && validNum(highAMv))
-      rec.high.push({ time: highAMt, ft: parseFloat(highAMv) });
+      rec.high.push({ t: highAMt, v: parseFloat(highAMv) });
 
     if (validTime(highPMt) && validNum(highPMv))
-      rec.high.push({ time: highPMt, ft: parseFloat(highPMv) });
+      rec.high.push({ t: highPMt, v: parseFloat(highPMv) });
 
     if (validTime(lowAMt) && validNum(lowAMv))
-      rec.low.push({ time: lowAMt, ft: parseFloat(lowAMv) });
+      rec.low.push({ t: lowAMt, v: parseFloat(lowAMv) });
 
     if (validTime(lowPMt) && validNum(lowPMv))
-      rec.low.push({ time: lowPMt, ft: parseFloat(lowPMv) });
+      rec.low.push({ t: lowPMt, v: parseFloat(lowPMv) });
 
     rec.sunrise = validTime(sunrise) ? sunrise : null;
     rec.sunset  = validTime(sunset)  ? sunset  : null;
@@ -230,17 +219,11 @@ async function getUsharborsToday() {
   const high = chooseTideTSV(rec, "high");
   const low  = chooseTideTSV(rec, "low");
 
-  const mkISO = t => {
-    if (!t) return null;
-    const [H, M] = t.time.split(":").map(Number);
-    return new Date(y, m - 1, now.getDate(), H, M).toISOString();
-  };
-
   return {
     outdated: false,
     tides: {
-      high: high ? { t: mkISO(high), v: high.ft } : null,
-      low:  low  ? { t: mkISO(low),  v: low.ft  } : null
+      high: high ? { t: high.t, v: high.v } : null,
+      low:  low  ? { t: low.t,  v: low.v  } : null
     },
     sun: {
       sunrise: rec.sunrise,
@@ -357,7 +340,7 @@ exports.handler = async () => {
         gulf,
         bay,
         waves: wave,
-        tides: ush.tides,
+        tides: ush.tides,     // ← now simple HH:MM strings
         sun: ush.sun,
         usharborsOutdated: ush.outdated
       })
