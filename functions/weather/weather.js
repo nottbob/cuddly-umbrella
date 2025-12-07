@@ -1,176 +1,146 @@
-// weather.js — FINAL VERSION
-// ------------------------------------------------------------
-// Backend used by SPI Marine Board
-// Loads:
-//   • Buoys (live)
-//   • NOAA tides (frontend)
-//   • Sunrise/sunset (frontend)
-//   • Waves from stormglass.json on GitHub
-// ------------------------------------------------------------
+// functions/weather/weather.js
 
-const fetch = require("node-fetch");
-
-const GITHUB_TOKEN  = process.env.GITHUB_TOKEN;
-const GITHUB_REPO   = "nottbob/wave-proxy";
-const GITHUB_BRANCH = "main";
-
-// -------------------------------
-// GITHUB LOADER
-// -------------------------------
-async function githubGet(path) {
-  const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/${path}?ref=${GITHUB_BRANCH}`;
-
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${GITHUB_TOKEN}`,
-      Accept: "application/vnd.github+json"
-    }
-  });
-
-  if (!res.ok) return null;
-
-  const j = await res.json();
-  return Buffer.from(j.content, "base64").toString("utf8");
-}
-
-// -------------------------------
-// WAVES (from GitHub only)
-// -------------------------------
-function pickWaveForLocalTime(waves) {
-  const now = new Date();
-
-  // Convert local SPI hour to UTC hour index
-  const localOffsetMin  = now.getTimezoneOffset(); // CST/CDT aware
-  const localToUTCms    = now.getTime() + localOffsetMin * 60000;
-  const localAsUTC      = new Date(localToUTCms);
-
-  const targetHour = localAsUTC.getUTCHours();
-
-  // Find wave whose UTC time matches current local hour slot
-  let best = null;
-  let bestDiff = Infinity;
-
-  for (const w of waves) {
-    if (!w.waveFt) continue;
-    const t = new Date(w.time);
-    const diff = Math.abs(t.getUTCHours() - targetHour);
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      best = w;
-    }
-  }
-
-  return best ? { waveFt: Number(best.waveFt) } : { waveFt: null };
-}
-
-// -------------------------------
-// NOAA BUOYS
-// -------------------------------
-function cToF(c) { return (c * 9) / 5 + 32; }
-function mpsToKts(m) { return m * 1.94384; }
-function parseNum(x) { const n = parseFloat(x); return isNaN(n) ? null : n; }
-
-function degToCard(d) {
-  const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE",
-                "S","SSW","SW","WSW","W","WNW","NW","NNW"];
-  return dirs[Math.floor((d % 360) / 22.5 + 0.5) % 16];
-}
-
-async function fetchBuoy(id) {
-  const url = `https://www.ndbc.noaa.gov/data/realtime2/${id}.txt`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Buoy fetch failed");
-
-  const raw = await res.text();
-  const lines = raw.split(/\r?\n/).filter(Boolean);
-
-  const headerLine = lines.find(x => x.startsWith("#"));
-  const header = headerLine.replace(/^#\s*/, "").split(/\s+/);
-
-  const idx = {
-    WDIR: header.indexOf("WDIR"),
-    WSPD: header.indexOf("WSPD"),
-    GST:  header.indexOf("GST"),
-    ATMP: header.indexOf("ATMP"),
-    WTMP: header.indexOf("WTMP")
-  };
-
-  const rows = lines.filter(x => !x.startsWith("#")).map(x => x.split(/\s+/));
-
-  let air=null, water=null, wind=null, gust=null, wdir=null;
-
-  for (const r of rows) {
-    if (air   == null && idx.ATMP !== -1) air   = parseNum(r[idx.ATMP]);
-    if (water == null && idx.WTMP !== -1) water = parseNum(r[idx.WTMP]);
-    if (wind  == null && idx.WSPD !== -1) wind  = parseNum(r[idx.WSPD]);
-    if (gust  == null && idx.GST  !== -1) gust  = parseNum(r[idx.GST]);
-    if (wdir  == null && idx.WDIR !== -1) {
-      const dd = parseNum(r[idx.WDIR]);
-      if (dd != null) wdir = dd;
-    }
-    if (air && water && wind && gust && wdir) break;
-  }
-
-  return {
-    airF: air ? Number((cToF(air)).toFixed(1)) : null,
-    waterF: water ? Number((cToF(water)).toFixed(1)) : null,
-    windKts: wind ? Number((mpsToKts(wind)).toFixed(1)) : null,
-    gustKts: gust ? Number((mpsToKts(gust)).toFixed(1)) : null,
-    windDirCardinal: wdir != null ? degToCard(wdir) : "--"
-  };
-}
-
-async function safeBuoy(id) {
-  try { return await fetchBuoy(id); }
-  catch { return { airF:null, waterF:null, windKts:null, gustKts:null, windDirCardinal:"--" }; }
-}
-
-// -------------------------------
-// MAIN HANDLER
-// -------------------------------
-exports.handler = async () => {
+export default async (req, res) => {
   try {
-    // 1. Load waves from GitHub
-    const wavesRaw = await githubGet("stormglass.json");
-    let waves = [];
-    if (wavesRaw) {
-      const parsed = JSON.parse(wavesRaw);
-      waves = parsed.waves || [];
+    // -----------------------------
+    // CONSTANTS
+    // -----------------------------
+    const NOAA_TIDE_STATION = "8779750";
+    const LAT = 26.07139, LON = -97.12872;
+
+    // -----------------------------
+    // UTIL FUNCTIONS
+    // -----------------------------
+    const toLocal = (d) => {
+      // d = Date object (UTC)
+      return new Date(d.toLocaleString("en-US", { timeZone: "America/Chicago" }));
+    };
+
+    const toHM = (d) => {
+      const h = d.getHours().toString().padStart(2, "0");
+      const m = d.getMinutes().toString().padStart(2, "0");
+      return `${h}:${m}`;
+    };
+
+    // -----------------------------
+    // FETCH NOAA BUOY AND AIR/WATER DATA
+    // -----------------------------
+    async function getBuoy(station) {
+      try {
+        const url = `https://www.ndbc.noaa.gov/data/realtime2/${station}.txt`;
+        const txt = await fetch(url).then(r => r.text());
+        const lines = txt.trim().split("\n");
+        const last = lines[lines.length - 1].split(/\s+/);
+
+        return {
+          airF: parseFloat(last[5]),
+          waterF: parseFloat(last[6]),
+          windKts: parseFloat(last[3]),
+          gustKts: parseFloat(last[4]),
+          windDirCardinal: last[2]
+        };
+      } catch (e) {
+        return null;
+      }
     }
 
-    const waveObj = pickWaveForLocalTime(waves);
+    const gulfData = await getBuoy("PCGT2");
+    const bayData  = await getBuoy("BZST2");
 
-    // 2. Load buoys
-    const [gulf, bay] = await Promise.all([
-      safeBuoy("BZST2"),
-      safeBuoy("PCGT2")
-    ]);
+    // -----------------------------
+    // TIDES (NOAA)
+    // -----------------------------
+    let tides = { high: null, low: null };
 
-    return {
-      statusCode: 200,
-      headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" },
-      body: JSON.stringify({
-        gulf,
-        bay,
-        waves: waveObj,
-        tides: { high:null, low:null },     // frontend handles tides
-        sun: { sunrise:null, sunset:null }, // frontend handles sun
-        usharborsOutdated: false
-      })
-    };
+    try {
+      const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&station=${NOAA_TIDE_STATION}&date=today&interval=hilo&units=english&time_zone=gmt&datum=MLLW&format=json`;
+
+      const t = await fetch(url).then(r => r.json());
+
+      const H = t.predictions.find(p => p.type === "H");
+      const L = t.predictions.find(p => p.type === "L");
+
+      if (H) {
+        const d = toLocal(new Date(H.t));
+        tides.high = { t: toHM(d), v: parseFloat(H.v).toFixed(1) };
+      }
+      if (L) {
+        const d = toLocal(new Date(L.t));
+        tides.low = { t: toHM(d), v: parseFloat(L.v).toFixed(1) };
+      }
+
+    } catch (e) {
+      tides = { high: null, low: null };
+    }
+
+    // -----------------------------
+    // SUNRISE / SUNSET
+    // -----------------------------
+    let sun = { sunrise: null, sunset: null };
+
+    try {
+      const s = await fetch(`https://api.sunrise-sunset.org/json?lat=${LAT}&lng=${LON}&formatted=0`)
+        .then(r => r.json());
+
+      const sr = toLocal(new Date(s.results.sunrise));
+      const ss = toLocal(new Date(s.results.sunset));
+
+      sun.sunrise = toHM(sr);
+      sun.sunset = toHM(ss);
+
+    } catch (e) {
+      sun = { sunrise: null, sunset: null };
+    }
+
+    // -----------------------------
+    // WAVES (FROM GITHUB JSON — NEVER STORMGLASS DIRECT)
+    // -----------------------------
+    let waves = { waveFt: null };
+    try {
+      const sg = await fetch(
+        "https://raw.githubusercontent.com/nottbob/wave-proxy/refs/heads/main/stormglass.json",
+        { cache: "no-store" }
+      ).then(r => r.json());
+
+      const arr = sg.waves; // array of { time, waveFt }
+
+      // get local time
+      const nowLocal = toLocal(new Date());
+
+      // find the entry with closest hour <= now
+      let best = null;
+
+      for (const w of arr) {
+        const tLocal = toLocal(new Date(w.time));
+        if (tLocal <= nowLocal) {
+          best = w;
+        } else {
+          break;
+        }
+      }
+
+      if (best) {
+        waves.waveFt = parseFloat(best.waveFt).toFixed(1);
+      }
+
+    } catch (e) {
+      waves.waveFt = null;
+    }
+
+    // -----------------------------
+    // FINAL OUTPUT
+    // -----------------------------
+    res.setHeader("Content-Type", "application/json");
+    res.status(200).json({
+      gulf: gulfData,
+      bay: bayData,
+      waves,
+      tides,
+      sun,
+      usharborsOutdated: false
+    });
 
   } catch (err) {
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        error: String(err),
-        gulf:null,
-        bay:null,
-        waves:{ waveFt:null },
-        tides:{ high:null, low:null },
-        sun:{ sunrise:null, sunset:null },
-        usharborsOutdated:true
-      })
-    };
+    res.status(500).json({ error: err.toString() });
   }
 };
