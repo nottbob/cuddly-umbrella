@@ -156,7 +156,7 @@ function renderWeather(w){
   gulfWind.textContent=`${w.gulf.windKts}-${w.gulf.gustKts} kts ${w.gulf.windDirCardinal}`;
   bayWind.textContent=`${w.bay.windKts}-${w.bay.gustKts} kts ${w.bay.windDirCardinal}`;
 
-  gulfSeas.textContent=w.waves.waveFt!=null ? w.waves.waveFt+" ft" : "--";
+  gulfSeas.textContent = w.waves.waveFt != null ? w.waves.waveFt+" ft" : "--";
 
   sunrise.textContent = w.sun.sunrise ?? "--";
   sunset.textContent  = w.sun.sunset  ?? "--";
@@ -199,7 +199,6 @@ async function updateBoard(){
 
 updateBoard();
 
-// Refresh every 1 min synced to real time
 (function sync(){
   const now=new Date();
   const ms=(60-now.getSeconds())*1000-now.getMilliseconds();
