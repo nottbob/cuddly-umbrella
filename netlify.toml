@@ -1,38 +1,58 @@
+###############################################
+# NETLIFY CONFIG FOR SPI WEATHER + WAVE UPDATER
+###############################################
+
 [build]
   functions = "functions"
   publish = "public"
 
-###########################################
-# ROUTES
-###########################################
+# Optional but recommended: make sure environment vars exist
+[build.environment]
+  GITHUB_TOKEN = ""
+  GITHUB_REPO = ""
+  GITHUB_BRANCH = ""
+  STORMGLASS_KEY = ""
 
-# Main weather endpoint
+###############################################
+# REDIRECTS
+###############################################
+
+# Weather API endpoint
 [[redirects]]
   from = "/weather"
   to = "/.netlify/functions/weather"
   status = 200
   force = true
 
-# Wave updater endpoint (optional for manual testing)
+# Wave updater endpoint (manual test only)
 [[redirects]]
   from = "/waveUpdater"
   to = "/.netlify/functions/waveUpdater"
   status = 200
   force = true
 
-###########################################
-# FUNCTIONS CONFIG (correct modern syntax)
-###########################################
+###############################################
+# FUNCTIONS SETTINGS (timeouts)
+###############################################
 
 [functions]
-  # These settings apply globally unless overridden per folder
-  node_bundler = "esbuild"
-  external_node_modules = []
 
-# Configure the waveUpdater function folder
-[functions.waveUpdater]
+  # These apply to ALL functions unless overridden below
+  node_bundler = "esbuild"
+  external_node_modules = ["node-fetch", "@octokit/rest"]
+
+# Override individual function timeouts
+[[functions]]
+  name = "waveUpdater"
   timeout = 20
 
-# Configure the weather function folder
-[functions.weather]
+[[functions]]
+  name = "weather"
   timeout = 10
+
+###############################################
+# PLUGINS (THIS FIXES YOUR BUILD)
+###############################################
+
+[[plugins]]
+  package = "@netlify/plugin-functions-install-core"
