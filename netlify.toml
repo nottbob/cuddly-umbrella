@@ -8,8 +8,8 @@
 
 [build.environment]
   GITHUB_TOKEN = ""
-  GITHUB_REPO = ""
-  GITHUB_BRANCH = ""
+  GITHUB_REPO = "nottbob/wave-proxy"
+  GITHUB_BRANCH = "main"
   STORMGLASS_KEY = ""
 
 ###############################################
@@ -29,7 +29,7 @@
   force = true
 
 ###############################################
-# FUNCTIONS ROOT CONFIG
+# FUNCTION BUNDLING CONFIG
 ###############################################
 
 [functions]
@@ -37,7 +37,7 @@
   external_node_modules = ["node-fetch", "@octokit/rest"]
 
 ###############################################
-# INDIVIDUAL FUNCTION SETTINGS
+# PER-FUNCTION SETTINGS
 ###############################################
 
 [functions.weather]
@@ -47,7 +47,17 @@
   timeout = 20
 
 ###############################################
-# PLUGINS
+# AUTOMATIC SCHEDULED RUNS (CRON)
+###############################################
+
+[[scheduled]]
+  name = "waveUpdater"
+  # Run at 00:00 and 12:00 in America/Chicago
+  cron = "0 0,12 * * *"
+  timezone = "America/Chicago"
+
+###############################################
+# REQUIRED NETLIFY PLUGIN
 ###############################################
 
 [[plugins]]
