@@ -1,10 +1,38 @@
-
 [build]
   functions = "functions"
   publish = "public"
 
+###########################################
+# ROUTES
+###########################################
+
+# Main weather endpoint
 [[redirects]]
   from = "/weather"
   to = "/.netlify/functions/weather"
   status = 200
   force = true
+
+# Wave updater endpoint (optional for manual testing)
+[[redirects]]
+  from = "/waveUpdater"
+  to = "/.netlify/functions/waveUpdater"
+  status = 200
+  force = true
+
+###########################################
+# FUNCTIONS CONFIG (correct modern syntax)
+###########################################
+
+[functions]
+  # These settings apply globally unless overridden per folder
+  node_bundler = "esbuild"
+  external_node_modules = []
+
+# Configure the waveUpdater function folder
+[functions.waveUpdater]
+  timeout = 20
+
+# Configure the weather function folder
+[functions.weather]
+  timeout = 10
