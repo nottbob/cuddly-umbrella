@@ -57,6 +57,19 @@ body {
 
 .cell { white-space:nowrap; }
 
+/* Small font for "kts" */
+.unit-small {
+  font-size: 0.6em;
+  opacity: 0.85;
+}
+
+/* NEW: Cardinal direction row */
+.wind-dir {
+  font-size: 0.8em;
+  opacity: 0.85;
+  margin-top: -0.6em;
+}
+
 .alert-red, .alert-yellow {
   padding:0.25em 0.4em;
   border-radius:6px;
@@ -93,13 +106,26 @@ body {
     <div class="cell">HIGH: <span id="tideHigh">--</span></div>
 
     <div class="cell"><span id="windLabel">WIND</span></div>
-    <div class="cell"><span id="gulfWind">--</span></div>
-    <div class="cell"><span id="bayWind">--</span></div>
-    <div class="cell">SUNRISE: <span id="sunrise">--</span></div>
+
+    <!-- Wind speeds (same row as before) -->
+    <div class="cell">
+      <span id="gulfWind">--</span><span class="unit-small">kts</span>
+    </div>
+    <div class="cell">
+      <span id="bayWind">--</span><span class="unit-small">kts</span>
+    </div>
+
+    <!-- Wind direction moved here, under WIND -->
+    <div class="cell wind-dir" id="windDir">--</div>
 
     <div class="cell"><span id="seasLabel">SEAS</span></div>
     <div class="cell"><span id="gulfSeas">--</span></div>
     <div class="cell"><span id="baySeas">N/A</span></div>
+    <div class="cell">SUNRISE: <span id="sunrise">--</span></div>
+
+    <div class="cell"></div>
+    <div class="cell"></div>
+    <div class="cell"></div>
     <div class="cell">SUNSET: <span id="sunset">--</span></div>
   </div>
 </div>
@@ -153,8 +179,12 @@ function renderWeather(w){
   gulfAir.textContent=w.gulf.airF+"°F";
   bayAir.textContent=w.bay.airF+"°F";
 
-  gulfWind.textContent=`${w.gulf.windKts}-${w.gulf.gustKts} kts ${w.gulf.windDirCardinal}`;
-  bayWind.textContent=`${w.bay.windKts}-${w.bay.gustKts} kts ${w.bay.windDirCardinal}`;
+  // Wind values NUMBER ONLY (no kts here)
+  gulfWind.textContent = `${w.gulf.windKts}-${w.gulf.gustKts}`;
+  bayWind.textContent  = `${w.bay.windKts}-${w.bay.gustKts}`;
+
+  // Wind direction under the row
+  windDir.textContent = `${w.gulf.windDirCardinal} / ${w.bay.windDirCardinal}`;
 
   gulfSeas.textContent=w.waves.waveFt!=null ? w.waves.waveFt+" ft" : "--";
 
@@ -199,7 +229,6 @@ async function updateBoard(){
 
 updateBoard();
 
-// Refresh every 1 min synced to real time
 (function sync(){
   const now=new Date();
   const ms=(60-now.getSeconds())*1000-now.getMilliseconds();
